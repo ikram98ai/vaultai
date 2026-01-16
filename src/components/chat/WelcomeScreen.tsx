@@ -1,0 +1,296 @@
+import { useState, useRef } from "react";
+import { useChatStore } from "../../stores/chatStore";
+import { useAppStore } from "../../stores/appStore";
+import { useUIStore } from "../../stores/uiStore";
+import { ModelSelector } from "../../components/common/ModelSelector";
+
+const TAGLINES = [
+  "Private. Personal. Unlimited. Uncensored. Unmonitored. Off-Grid.",
+  "Your AI, Your Rules, Your Privacy.",
+  "Intelligence Without Surveillance.",
+  "Think Freely. Chat Privately.",
+  "No Cloud. No Tracking. Just AI.",
+];
+
+export function WelcomeScreen() {
+  const [taglineIndex, setTaglineIndex] = useState(0);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const {
+    currentModel,
+    ragEnabled,
+    webSearchEnabled,
+    agentMode,
+    setAgentMode,
+  } = useAppStore();
+  const { sendMessage } = useChatStore();
+  const { setShowWelcome } = useUIStore();
+
+  // Rotate tagline
+  const rotateTagline = () => {
+    setTaglineIndex((prev) => (prev + 1) % TAGLINES.length);
+  };
+
+  // Handle message send
+  const handleSend = async () => {
+    const message = textareaRef.current?.value.trim();
+    if (!message) return;
+
+    // Clear input
+    if (textareaRef.current) {
+      textareaRef.current.value = "";
+      textareaRef.current.style.height = "auto";
+    }
+
+    // Hide welcome screen and show chat
+    setShowWelcome(false);
+
+    // Send message
+    await sendMessage(message, currentModel, {
+      ragEnabled: ragEnabled,
+      webSearchEnabled,
+      agentMode,
+    });
+  };
+
+  // Handle key press
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  // Auto-resize textarea
+  const handleInput = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height =
+        Math.min(textareaRef.current.scrollHeight, 120) + "px";
+    }
+  };
+
+  // Quick actions
+  const handleQuickAction = (action: string) => {
+    if (!textareaRef.current) return;
+
+    switch (action) {
+      case "images":
+        useAppStore.getState().setCurrentModel("flux-schnell");
+        textareaRef.current.value = "Create an image of ";
+        break;
+      case "research":
+        useAppStore.getState().setCurrentModel("vaultai16-chat");
+        textareaRef.current.value = "Research the latest information about ";
+        break;
+      case "news":
+        useAppStore.getState().setCurrentModel("vaultai16-chat");
+        textareaRef.current.value = "What are the latest news about ";
+        break;
+    }
+
+    textareaRef.current.focus();
+    textareaRef.current.setSelectionRange(
+      textareaRef.current.value.length,
+      textareaRef.current.value.length,
+    );
+  };
+
+  return (
+    <div className="welcome-screen" id="welcomeScreen">
+      <div className="welcome-content">
+        {/* Welcome Logo */}
+        <div className="welcome-logo" onClick={rotateTagline}>
+          <svg
+            width="185"
+            height="54"
+            viewBox="0 0 185 54"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="vaultai-logo"
+          >
+            <path
+              d="M20.9622 52.9125C20.5324 52.681 18.1518 50.9617 16.8623 49.9368C7.5605 42.5636 2.58997 34.6835 0.881691 24.6102C0.319613 21.2818 0.0771483 17.9645 0.0330637 13.1152L0 9.91902L0.275528 9.44511C0.672289 8.75078 1.17926 8.51934 3.40553 7.99032C8.94916 6.67881 14.3716 4.29824 20.3781 0.551057C21.2487 0 21.2598 0 22.1966 0H23.1444L24.3567 0.782501C27.9606 3.09694 32.0825 5.12483 36.1383 6.5686C36.9869 6.86617 37.7474 7.17476 37.8245 7.24089C37.9017 7.30701 37.9678 7.57152 37.9678 7.82501C37.9678 8.29891 37.9568 8.30994 36.5902 9.50022C35.0582 10.8117 34.8268 10.955 34.1325 10.966C33.0193 10.9771 27.5749 8.50832 23.6293 6.21592C22.9129 5.79712 22.2517 5.45546 22.1745 5.45546C22.0864 5.45546 21.3259 5.86324 20.4883 6.34817C16.3333 8.78385 11.4289 10.8779 6.8331 12.1894C5.86324 12.4649 5.20197 12.7184 5.03666 12.8727L4.76113 13.1152L4.83828 15.3745C5.19095 26.7703 7.74786 33.7357 14.1622 40.7121C15.2092 41.8583 17.4354 43.9413 18.8902 45.1315C20.2128 46.2337 22.0092 47.5562 22.1745 47.5562C22.3619 47.5562 24.1032 46.2447 25.8997 44.7568C27.63 43.3131 30.7159 40.2161 31.9392 38.6842C35.6644 34.0553 37.8907 28.9635 38.8495 22.924C39.114 21.2487 38.9266 21.5684 41.4174 18.5155C43.1918 16.3333 43.2249 16.3113 43.6768 16.2782C44.0184 16.2562 44.1617 16.2892 44.2058 16.4105C44.2939 16.6309 44.0845 19.8491 43.8531 21.7667C42.8943 30.0436 40.3484 36.2595 35.455 42.2661C34.1986 43.798 30.8812 47.1154 29.0848 48.6252C27.6079 49.8706 25.2715 51.645 23.9379 52.5598L23.1885 53.0668H22.2296C21.6124 53.0668 21.1606 53.0117 20.9622 52.9125Z"
+              fill="#FFBA08"
+            />
+            <path
+              d="M21.3813 38.3757C21.2931 38.2324 20.5657 36.6013 19.7722 34.7607C16.5761 27.3105 15.1654 25.0732 13.0052 24.0592C12.355 23.7616 12.1235 23.7176 10.9333 23.6514L9.58868 23.5853L9.55562 23.1114C9.51153 22.4832 9.754 22.1085 10.9002 21.0284C11.9582 20.0365 12.9171 19.4303 13.9751 19.1107C14.5923 18.9123 14.945 18.8903 16.0691 18.9123C17.3476 18.9564 17.4468 18.9785 18.2403 19.3532C19.9706 20.1908 21.3482 21.7778 22.6597 24.4229L23.2108 25.536L26.98 21.7558C34.2099 14.5039 39.9409 9.41213 45.2972 5.46656C46.7079 4.41955 47.3802 4.11096 48.0745 4.15504L48.6035 4.18811V4.8604C48.6035 5.4335 48.5484 5.62085 48.2178 6.14987C47.7879 6.83318 44.702 10.7347 39.5882 17.0718C28.7655 30.4625 25.5803 34.5073 23.8611 37.0862C22.8361 38.6181 22.8251 38.6292 22.1307 38.6292C21.6458 38.6292 21.5246 38.5851 21.3813 38.3757Z"
+              fill="#FFBA08"
+            />
+            <path
+              d="M68.2393 36.6338L76.3302 11.4947H82.182L71.1545 42.2532H67.2041L68.2393 36.6338ZM60.7609 11.4947L68.7885 36.6338L69.887 42.2532H65.9155L54.9303 11.4947H60.7609ZM94.4372 37.669V26.7683C94.4372 25.9515 94.2893 25.2473 93.9935 24.6558C93.6978 24.0643 93.2471 23.6066 92.6415 23.2826C92.05 22.9587 91.3036 22.7968 90.4022 22.7968C89.5713 22.7968 88.853 22.9376 88.2475 23.2193C87.6419 23.5009 87.1701 23.8812 86.8321 24.36C86.4941 24.8389 86.3251 25.3811 86.3251 25.9867H81.255C81.255 25.0853 81.4733 24.2122 81.9099 23.3672C82.3465 22.5221 82.9802 21.7687 83.8111 21.1067C84.6421 20.4448 85.635 19.9237 86.7898 19.5435C87.9447 19.1632 89.2403 18.9731 90.6769 18.9731C92.3951 18.9731 93.9161 19.2618 95.2399 19.8392C96.5779 20.4166 97.6271 21.2898 98.3876 22.4588C99.1622 23.6136 99.5495 25.0642 99.5495 26.8106V36.9718C99.5495 38.014 99.6199 38.9506 99.7607 39.7815C99.9157 40.5984 100.134 41.3096 100.416 41.9152V42.2532H95.1977C94.9583 41.7039 94.7681 41.0068 94.6273 40.1618C94.5005 39.3027 94.4372 38.4717 94.4372 37.669ZM95.1766 28.3527L95.2188 31.5004H91.5641C90.6205 31.5004 89.7896 31.5919 89.0713 31.775C88.3531 31.944 87.7545 32.1975 87.2757 32.5355C86.7968 32.8735 86.4377 33.282 86.1983 33.7608C85.9589 34.2396 85.8392 34.7819 85.8392 35.3874C85.8392 35.993 85.98 36.5493 86.2617 37.0563C86.5433 37.5493 86.9518 37.9366 87.4869 38.2182C88.0362 38.4999 88.6981 38.6407 89.4727 38.6407C90.5149 38.6407 91.4233 38.4295 92.1979 38.007C92.9866 37.5704 93.6062 37.0423 94.0569 36.4226C94.5076 35.7888 94.747 35.1903 94.7752 34.6269L96.4229 36.8873C96.2539 37.4648 95.9652 38.0844 95.5568 38.7464C95.1484 39.4083 94.6132 40.0421 93.9513 40.6477C93.3034 41.2392 92.5218 41.725 91.6064 42.1053C90.705 42.4856 89.6628 42.6757 88.4798 42.6757C86.987 42.6757 85.6561 42.3799 84.4871 41.7884C83.3182 41.1828 82.4028 40.373 81.7409 39.359C81.0789 38.3309 80.748 37.169 80.748 35.8733C80.748 34.6621 80.9733 33.5918 81.424 32.6623C81.8887 31.7187 82.5647 30.93 83.452 30.2963C84.3534 29.6625 85.4519 29.1837 86.7476 28.8597C88.0432 28.5217 89.522 28.3527 91.1839 28.3527H95.1766ZM116.462 36.8662V19.3956H121.575V42.2532H116.758L116.462 36.8662ZM117.181 32.113L118.892 32.0708C118.892 33.6059 118.723 35.0213 118.385 36.317C118.047 37.5986 117.526 38.7182 116.822 39.6759C116.117 40.6195 115.216 41.3589 114.118 41.894C113.019 42.4151 111.702 42.6757 110.167 42.6757C109.054 42.6757 108.033 42.5137 107.104 42.1898C106.174 41.8659 105.372 41.3659 104.696 40.6899C104.034 40.0139 103.52 39.1337 103.153 38.0492C102.787 36.9648 102.604 35.6691 102.604 34.1622V19.3956H107.695V34.2044C107.695 35.0354 107.794 35.7325 107.991 36.2958C108.188 36.8451 108.456 37.2887 108.794 37.6267C109.132 37.9647 109.526 38.2042 109.977 38.345C110.428 38.4858 110.906 38.5562 111.413 38.5562C112.864 38.5562 114.005 38.2746 114.836 37.7112C115.681 37.1338 116.279 36.3592 116.631 35.3874C116.998 34.4157 117.181 33.3242 117.181 32.113ZM130.08 9.8047V42.2532H124.967V9.8047H130.08ZM144.404 19.3956V23.1136H131.518V19.3956H144.404ZM135.236 13.7974H140.327V35.9367C140.327 36.6409 140.426 37.1831 140.623 37.5634C140.834 37.9295 141.123 38.176 141.489 38.3027C141.855 38.4295 142.285 38.4929 142.778 38.4929C143.13 38.4929 143.468 38.4717 143.792 38.4295C144.116 38.3872 144.376 38.345 144.573 38.3027L144.595 42.1898C144.172 42.3165 143.679 42.4292 143.116 42.5278C142.567 42.6264 141.933 42.6757 141.215 42.6757C140.046 42.6757 139.01 42.4715 138.109 42.063C137.208 41.6405 136.504 40.9575 135.997 40.0139C135.49 39.0703 135.236 37.8169 135.236 36.2536V13.7974ZM160.819 15.593L151.629 42.2532H146.073L157.65 11.4947H161.199L160.819 15.593ZM168.508 42.2532L159.298 15.593L158.896 11.4947H162.467L174.085 42.2532H168.508ZM168.065 30.8455V35.0494H151.334V30.8455H168.065ZM181.027 11.4947V42.2532H175.725V11.4947H181.027Z"
+              fill="#FFBA08"
+            />
+          </svg>
+        </div>
+
+        {/* Animated Tagline */}
+        <div id="tagline" className="tagline">
+          {TAGLINES[taglineIndex]}
+        </div>
+
+        {/* Input Area */}
+        <div className="main-input-container">
+          <div className="main-input-wrapper">
+            <textarea
+              ref={textareaRef}
+              id="messageInput"
+              className="main-input"
+              placeholder="What do you want to know?"
+              rows={1}
+              onKeyDown={handleKeyDown}
+              onInput={handleInput}
+            />
+
+            {/* Model Selector Buttons */}
+            <div className="input-controls">
+              <button className="input-control-btn" id="attachBtn">
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                  <path d="M7.5,18A5.5,5.5 0 0,1 2,12.5A5.5,5.5 0 0,1 7.5,7H18A4,4 0 0,1 22,11A4,4 0 0,1 18,15H9.5A2.5,2.5 0 0,1 7,12.5A2.5,2.5 0 0,1 9.5,10H17V11.5H9.5A1,1 0 0,0 8.5,12.5A1,1 0 0,0 9.5,13.5H18A2.5,2.5 0 0,0 20.5,11A2.5,2.5 0 0,0 18,8.5H7.5A4,4 0 0,0 3.5,12.5A4,4 0 0,0 7.5,16.5H17V18H7.5Z" />
+                </svg>
+              </button>
+
+              <button
+                className="input-control-btn"
+                id="sourceToolBtnWelcome"
+                title="Source Tool"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                >
+                  <path d="M8 13C6.14 13 4.59 14.28 4.14 16H2V18H4.14C4.59 19.72 6.14 21 8 21S11.41 19.72 11.86 18H22V16H11.86C11.41 14.28 9.86 13 8 13M8 19C6.9 19 6 18.1 6 17C6 15.9 6.9 15 8 15S10 15.9 10 17C10 18.1 9.1 19 8 19M19.86 6C19.41 4.28 17.86 3 16 3S12.59 4.28 12.14 6H2V8H12.14C12.59 9.72 14.14 11 16 11S19.41 9.72 19.86 8H22V6H19.86M16 9C14.9 9 14 8.1 14 7C14 5.9 14.9 5 16 5S18 5.9 18 7C18 8.1 17.1 9 16 9Z" />
+                </svg>
+              </button>
+
+              {/* Agent Mode Toggle */}
+              <div
+                className="agent-mode-wrapper"
+                title="Enable LangChain Agent"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginRight: "8px",
+                  borderRight: "1px solid var(--border)",
+                  paddingRight: "8px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "11px",
+                    marginRight: "6px",
+                    fontWeight: 500,
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  Agent
+                </span>
+                <label
+                  className="switch"
+                  style={{ width: "28px", height: "16px" }}
+                >
+                  <input
+                    type="checkbox"
+                    id="agentModeToggle"
+                    checked={agentMode}
+                    onChange={(e) => setAgentMode(e.target.checked)}
+                  />
+                  <span className="slider" style={{ borderRadius: "16px" }} />
+                </label>
+              </div>
+
+              <ModelSelector />
+
+              <button
+                id="sendBtn"
+                className="send-btn"
+                data-testid="send-button"
+                onClick={handleSend}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M13 7.828V20h-2V7.828l-5.364 5.364-1.414-1.414L12 4l7.778 7.778-1.414 1.414L13 7.828z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="quick-actions">
+          <button
+            className="quick-action-btn"
+            onClick={() => handleQuickAction("images")}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path d="M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z" />
+            </svg>
+            Create Images
+          </button>
+          <button
+            className="quick-action-btn"
+            onClick={() => handleQuickAction("research")}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z" />
+            </svg>
+            Research
+          </button>
+          <button
+            className="quick-action-btn"
+            onClick={() => handleQuickAction("news")}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z" />
+            </svg>
+            Latest News
+          </button>
+
+          {/* Personas Dropdown */}
+          <div className="personas-dropdown">
+            <button className="quick-action-btn personas-btn">
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" />
+              </svg>
+              Personas
+              <svg viewBox="0 0 24 24" width="12" height="12">
+                <path d="M7,10L12,15L17,10H7Z" />
+              </svg>
+            </button>
+            <div className="personas-menu">
+              <button className="persona-option">
+                <span className="persona-icon">❤️</span>
+                Companion
+              </button>
+              <button className="persona-option">
+                <span className="persona-icon">😄</span>
+                Unhinged Comedian
+              </button>
+              <button className="persona-option">
+                <span className="persona-icon">🤝</span>
+                Loyal Friend
+              </button>
+              <button className="persona-option">
+                <span className="persona-icon">🏠</span>
+                Homework Helper
+              </button>
+              <button className="persona-option">
+                <span className="persona-icon">🐕</span>
+                Grok "Dog"
+              </button>
+              <button className="persona-option">
+                <span className="persona-icon">💊</span>
+                Therapist
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
