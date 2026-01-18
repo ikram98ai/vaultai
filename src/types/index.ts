@@ -102,6 +102,9 @@ export interface Settings {
   rag: {
     enabled: boolean;
   };
+  agent: {
+    enabled: boolean;
+  };
   privateSearch: boolean;
   privacy?: {
     offlineMode: boolean;

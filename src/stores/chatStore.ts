@@ -187,9 +187,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sendMessage: async (content: string, model: string, options: QueryOptions) => {
     const { addMessage, currentChatId, generateChatId } = get();
     
-    // Create chat if needed
-    if (!currentChatId) {
-      set({ currentChatId: generateChatId() });
+    // Create chat ID if needed
+    let chatId = currentChatId;
+    if (!chatId) {
+      chatId = generateChatId();
+      set({ currentChatId: chatId });
     }
     
     // Add user message
@@ -199,6 +201,52 @@ export const useChatStore = create<ChatState>((set, get) => ({
       timestamp: Date.now(),
     };
     addMessage(userMessage);
+    
+    // Helper to save current state
+    const saveState = async () => {
+      const { messages: currentMessages, currentChatId, currentProjectId, chatHistory } = get();
+      if (!currentChatId) return;
+
+      // Find existing title or generate new one
+      const existingChat = chatHistory.find(c => c.id === currentChatId);
+      let title = existingChat?.title;
+      
+      if (!title) {
+        const firstUserMsg = currentMessages.find(m => m.role === 'user');
+        if (firstUserMsg) {
+          title = firstUserMsg.content.substring(0, 50);
+          if (title.length < firstUserMsg.content.length) title += '...';
+        } else {
+          title = 'New Chat';
+        }
+      }
+
+      const chatData: Chat = {
+        id: currentChatId,
+        title,
+        messages: currentMessages,
+        timestamp: Date.now(),
+        model: model, // Current model
+        pinned: existingChat?.pinned || false,
+        projectId: currentProjectId || undefined
+      };
+
+      try {
+        const savedChat = await commands.saveChat(chatData);
+        // Update history
+        set(state => {
+          const newHistory = state.chatHistory.some(c => c.id === savedChat.id)
+            ? state.chatHistory.map(c => c.id === savedChat.id ? savedChat : c)
+            : [savedChat, ...state.chatHistory];
+          return { chatHistory: newHistory };
+        });
+      } catch (e) {
+        console.error('Failed to save chat:', e);
+      }
+    };
+
+    // Save after user message (optimistic)
+    await saveState();
     
     // Set sending state
     set({ isSending: true, generationStartTime: Date.now() });
@@ -222,6 +270,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
           sources: response.sources,
         };
         addMessage(assistantMessage);
+        
+        // Save after assistant message
+        await saveState();
       } else {
         // Add error message
         const errorMessage: Message = {
@@ -230,6 +281,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
           timestamp: Date.now(),
         };
         addMessage(errorMessage);
+        // No save on error? Or save error message? Let's save it.
+        await saveState();
       }
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -239,6 +292,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         timestamp: Date.now(),
       };
       addMessage(errorMessage);
+      await saveState();
     } finally {
       set({ isSending: false, generationStartTime: null });
     }

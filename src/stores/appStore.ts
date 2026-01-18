@@ -76,11 +76,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   saveSettings: async () => {
-    const { currentModel, ragEnabled, webSearchEnabled } = get();
+    const { currentModel, ragEnabled, agentMode, webSearchEnabled } = get();
     const settings: Settings = {
       model: { chat: currentModel },
       ui: { streamingEnabled: false },
       rag: { enabled: ragEnabled },
+      agent:{enabled: agentMode},
       privateSearch: webSearchEnabled,
     };
     
