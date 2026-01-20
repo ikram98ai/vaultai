@@ -7,6 +7,7 @@ interface FileInfo {
   size: number;
   uploadedAt: number;
   status: 'processing' | 'ready' | 'error';
+  indexed?: boolean;
 }
 
 export function FilesContainer() {
@@ -71,13 +72,15 @@ export function FilesContainer() {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  const getFileIcon = (type: string) => {
-    if (type.includes('pdf')) return '📄';
-    if (type.includes('word') || type.includes('doc')) return '📝';
-    if (type.includes('excel') || type.includes('sheet')) return '📊';
-    if (type.includes('image')) return '🖼️';
-    if (type.includes('text')) return '📃';
-    return '📁';
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const dateStr = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear().toString().substring(2)}`;
+    const timeStr = date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+    });
+    return `${dateStr} ${timeStr}`;
   };
 
   return (
@@ -149,19 +152,39 @@ export function FilesContainer() {
               <p>Loading files...</p>
             </div>
           ) : files.length === 0 ? (
-            <div className="empty-files">
-              <p>No files uploaded yet. Upload your first document to get started!</p>
+            <div className="empty-state">
+                <svg viewBox="0 0 24 24" width="48" height="48">
+                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" fill="currentColor"/>
+                </svg>
+                <h4>No files uploaded yet</h4>
+                <p>Upload your first document to get started with enhanced AI conversations</p>
             </div>
           ) : (
             files.map((file) => (
-              <div key={file.id} className="file-card">
-                <div className="file-icon">{getFileIcon(file.type)}</div>
-                <div className="file-info">
-                  <div className="file-name">{file.name}</div>
-                  <div className="file-meta">
-                    <span>{formatFileSize(file.size)}</span>
-                    <span className={`file-status ${file.status}`}>{file.status}</span>
-                  </div>
+              <div key={file.id} className="file-item" data-filename={file.name}>
+                <div className="kb-file-content">
+                    <div className="vector-icon2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" width="16" height="16">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                        </svg>
+                    </div>
+                    <div className="kb-file-name">{file.name}</div>
+                    <div className="kb-file-meta">
+                        <span className="date-and-time">{formatDate(file.uploadedAt)}</span>
+                        <span className="date-and-time">• {formatFileSize(file.size)}</span>
+                    </div>
+                    <div className="kb-file-status">
+                        {file.indexed ? (
+                             <span style={{ color: '#4ade80' }}>Indexed</span>
+                        ) : (
+                             <span style={{ color: '#fbbf24' }}>Processing</span>
+                        )}
+                    </div>
+                    <div className="file-actions">
+                        <button className="file-delete-btn" title="Delete file">
+                            ×
+                        </button>
+                    </div>
                 </div>
               </div>
             ))

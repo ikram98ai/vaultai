@@ -12,16 +12,30 @@ interface AppState {
   webSearchEnabled: boolean;
   agentMode: boolean;
   
+  // Source tool toggles
+  sourceWebEnabled: boolean;
+  sourceProfileEnabled: boolean;
+  sourceKnowledgebaseEnabled: boolean;
+  sourceProjectsEnabled: boolean;
+  
+  // Theme
+  theme: 'dark' | 'light' | 'system';
+
   // Settings
   settings: Settings | null;
   isLoadingSettings: boolean;
   
   // Actions
+  setTheme: (theme: 'dark' | 'light' | 'system') => void;
   setCurrentModel: (model: string) => void;
   setSystemTier: (tier: 'lite' | 'standard' | 'performance') => void;
   setRagEnabled: (enabled: boolean) => void;
   setWebSearchEnabled: (enabled: boolean) => void;
   setAgentMode: (enabled: boolean) => void;
+  setSourceWebEnabled: (enabled: boolean) => void;
+  setSourceProfileEnabled: (enabled: boolean) => void;
+  setSourceKnowledgebaseEnabled: (enabled: boolean) => void;
+  setSourceProjectsEnabled: (enabled: boolean) => void;
   loadSettings: () => Promise<void>;
   saveSettings: () => Promise<void>;
   detectSystemTier: () => Promise<void>;
@@ -29,15 +43,21 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   // Initial state
+  theme: 'dark',
   currentModel: 'vaultai16-code',
   systemTier: 'lite',
   ragEnabled: true,
   webSearchEnabled: true,
   agentMode: false,
+  sourceWebEnabled: true,
+  sourceProfileEnabled: true,
+  sourceKnowledgebaseEnabled: true,
+  sourceProjectsEnabled: true,
   settings: null,
   isLoadingSettings: false,
 
   // Actions
+  setTheme: (theme) => set({ theme }),
   setCurrentModel: (model) => {
     set({ currentModel: model });
     // Auto-save settings when model changes
@@ -57,6 +77,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setAgentMode: (enabled) => set({ agentMode: enabled }),
+  setSourceWebEnabled: (enabled) => set({ sourceWebEnabled: enabled }),
+  setSourceProfileEnabled: (enabled) => set({ sourceProfileEnabled: enabled }),
+  setSourceKnowledgebaseEnabled: (enabled) => set({ sourceKnowledgebaseEnabled: enabled }),
+  setSourceProjectsEnabled: (enabled) => set({ sourceProjectsEnabled: enabled }),
 
   loadSettings: async () => {
     set({ isLoadingSettings: true });

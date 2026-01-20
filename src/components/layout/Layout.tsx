@@ -1,10 +1,15 @@
-import { Sidebar } from '../../components/layout/Sidebar';
-import { MainContent } from '../../components/layout/MainContent';
-import { ProfileModal } from '../../components/modals/ProfileModal';
+import { Sidebar } from './Sidebar';
+import { MainContent } from './MainContent';
+import { ProfileModal } from '../modals/ProfileModal';
 import { useUIStore } from '../../stores/uiStore';
 
 export function Layout() {
-  const { sidebarOpen, setSidebarOpen, profileModalOpen, closeProfileModal } = useUIStore();
+  const { 
+    sidebarOpen, 
+    setSidebarOpen, 
+    profileModalOpen, 
+    closeProfileModal,
+  } = useUIStore();
 
   return (
     <div id="app">

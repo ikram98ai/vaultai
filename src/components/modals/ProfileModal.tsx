@@ -10,7 +10,18 @@ interface ProfileModalProps {
 export function ProfileModal({ onClose }: ProfileModalProps) {
   const { currentModel, setCurrentModel, ragEnabled, setRagEnabled, webSearchEnabled, setWebSearchEnabled } = useAppStore();
   
-  const [profile, setProfile] = useState<UserProfile>({
+  const [profile, setProfile] = useState<UserProfile & {
+    pronouns?: string;
+    dob?: string;
+    location?: string;
+    occupation?: string;
+    employer?: string;
+    aliases?: string;
+    interests?: string;
+    communicationStyle?: string;
+    relationships?: string;
+    notes?: string;
+  }>({
     name: '',
     email: '',
   });
@@ -25,7 +36,7 @@ export function ProfileModal({ onClose }: ProfileModalProps) {
     try {
       const userProfile = await commands.getUserProfile();
       if (userProfile) {
-        setProfile(userProfile);
+        setProfile(prev => ({ ...prev, ...userProfile }));
       }
     } catch (error) {
       console.error('Failed to load profile:', error);
@@ -53,126 +64,173 @@ export function ProfileModal({ onClose }: ProfileModalProps) {
     }
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setProfile(prev => ({ ...prev, [name]: value }));
+  };
+
   return (
-    <div className="modal" id="profileModal" onClick={onClose}>
-      <div className="modal-content profile-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Profile & Settings</h2>
-          <button className="close-modal-btn" id="closeProfile" onClick={onClose}>
-            ×
-          </button>
+    <div id="profileModal" className="modal show" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="modal-content profile-modal">
+            <div className="modal-header">
+                <h2>Profile</h2>
+                <button className="close-modal-btn" id="closeProfile" onClick={onClose}>×</button>
+            </div>
+            
+            {isLoading ? (
+                <div className="modal-loading">
+                    <div className="spinner"></div>
+                    <p>Loading...</p>
+                </div>
+            ) : (
+                <div className="profile-content">
+                    <form id="profileForm" onSubmit={handleSaveProfile}>
+                        <div className="profile-avatar-section">
+                            <div className="profile-avatar-large">
+                                <span id="profileInitials">{profile.name ? profile.name.substring(0, 2).toUpperCase() : 'VA'}</span>
+                            </div>
+                            <button type="button" className="secondary-btn">Change Avatar</button>
+                        </div>
+
+                        <div className="profile-section">
+                            <h3>Basic Information</h3>
+                            <div className="form-group">
+                                <label htmlFor="fullName">Name</label>
+                                <input type="text" id="fullName" name="name" placeholder="Your name"
+                                    className="form-input" value={profile.name} onChange={handleChange} />
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="pronouns">Pronouns</label>
+                                    <select id="pronouns" name="pronouns" className="form-select" value={profile.pronouns || ''} onChange={handleChange}>
+                                        <option value="">Select pronouns</option>
+                                        <option value="He">He</option>
+                                        <option value="She">She</option>
+                                        <option value="They">They</option>
+                                        <option value="he/him">he/him</option>
+                                        <option value="she/her">she/her</option>
+                                        <option value="they/them">they/them</option>
+                                        <option value="custom">Custom</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="dateOfBirth">Date of Birth</label>
+                                    <input type="date" id="dateOfBirth" name="dob" className="form-input" value={profile.dob || ''} onChange={handleChange} />
+                                </div>
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="location">Location</label>
+                                    <input type="text" id="location" name="location" placeholder="City, Country"
+                                        className="form-input" value={profile.location || ''} onChange={handleChange} />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="occupation">Role</label>
+                                    <input type="text" id="occupation" name="occupation" placeholder="Your role"
+                                        className="form-input" value={profile.occupation || ''} onChange={handleChange} />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="employer">Organization</label>
+                                <input type="text" id="employer" name="employer" placeholder="Company/Organization"
+                                    className="form-input" value={profile.employer || ''} onChange={handleChange} />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="aliases">Aliases</label>
+                                <input type="text" id="aliases" name="aliases"
+                                    placeholder="Nicknames, alternate names (comma-separated)" className="form-input" value={profile.aliases || ''} onChange={handleChange} />
+                                <small>Names the AI can use to address you</small>
+                            </div>
+                        </div>
+
+                        <div className="profile-section">
+                            <h3>Preferences</h3>
+                            <div className="form-group">
+                                <label htmlFor="interests">Topics of Interest</label>
+                                <input type="text" id="interests" name="interests"
+                                    placeholder="Technology, Science, Art..." className="form-input" value={profile.interests || ''} onChange={handleChange} />
+                                <small>Help the AI understand your interests</small>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="communicationStyle">Communication Style</label>
+                                <select id="communicationStyle" name="communicationStyle" className="form-select" value={profile.communicationStyle || 'balanced'} onChange={handleChange}>
+                                    <option value="balanced">Balanced</option>
+                                    <option value="formal">Formal</option>
+                                    <option value="casual">Casual</option>
+                                    <option value="technical">Technical</option>
+                                    <option value="creative">Creative</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="profile-section">
+                            <h3>Relationships</h3>
+                            <div className="form-group">
+                                <label htmlFor="relationships">Family & Pets</label>
+                                <textarea id="relationships" name="relationships" rows={3}
+                                    placeholder="Name (relation)&#10;Example: John (brother)&#10;Fluffy (cat)"
+                                    className="form-textarea" value={profile.relationships || ''} onChange={handleChange}></textarea>
+                                <small>One per line in format: Name (relation)</small>
+                            </div>
+                        </div>
+
+                        <div className="profile-section">
+                            <h3>Additional Context</h3>
+                            <div className="form-group">
+                                <label htmlFor="context">Background Information</label>
+                                <textarea id="context" name="notes" rows={8}
+                                    placeholder="Any additional context you'd like the AI to know..."
+                                    className="form-textarea" value={profile.notes || ''} onChange={handleChange}></textarea>
+                                <small>This helps personalize your AI interactions</small>
+                            </div>
+                        </div>
+
+                        <div className="profile-footer">
+                            <button type="button" className="secondary-btn" id="clearProfile" onClick={handleClearProfile}>Clear Profile</button>
+                            <button type="submit" className="primary-btn">Save Profile</button>
+                        </div>
+                    </form>
+
+                    {/* Settings Section embedded in Profile Modal as per HTML */}
+                    <div className="profile-section settings-section">
+                        <h3>Settings</h3>
+
+                        <div className="form-group">
+                            <label className="toggle-label">
+                                <input type="checkbox" id="ragEnabled" checked={ragEnabled} onChange={(e) => setRagEnabled(e.target.checked)} />
+                                <span className="toggle-switch"></span>
+                                <span className="toggle-text">
+                                    <strong>Knowledge Base Integration</strong>
+                                    <small>Use documents from your knowledge base to enhance responses</small>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="toggle-label">
+                                <input type="checkbox" id="webSearchEnabled" checked={webSearchEnabled} onChange={(e) => setWebSearchEnabled(e.target.checked)} />
+                                <span className="toggle-switch"></span>
+                                <span className="toggle-text">
+                                    <strong>Web Search</strong>
+                                    <small>Allow AI to search the web for current information</small>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="defaultModelProfile">Default Model</label>
+                            <select id="defaultModelProfile" className="form-select" value={currentModel} onChange={(e) => setCurrentModel(e.target.value)}>
+                                <option value="vaultai16-chat">Mistral Nemo 12B (Chat)</option>
+                                <option value="vaultai16-code">Devstral (Code)</option>
+                                <option value="vaultai16-fast">LLaMA 3.2 3B (Fast)</option>
+                                <option value="flux-schnell">FLUX Image</option>
+                                <option value="infiniteyou-flux">InfiniteYou FLUX</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
-
-        {isLoading ? (
-          <div className="modal-loading">
-            <div className="spinner"></div>
-            <p>Loading...</p>
-          </div>
-        ) : (
-          <form id="profileForm" onSubmit={handleSaveProfile}>
-            {/* Profile Section */}
-            <div className="profile-section">
-              <h3>Profile Information</h3>
-              
-              <div className="form-group">
-                <label htmlFor="profileName">Display Name</label>
-                <input
-                  type="text"
-                  id="profileName"
-                  value={profile.name}
-                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                  placeholder="Enter your name"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="profileEmail">Email (optional)</label>
-                <input
-                  type="email"
-                  id="profileEmail"
-                  value={profile.email || ''}
-                  onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                  placeholder="Enter your email"
-                />
-              </div>
-            </div>
-
-            {/* Settings Section */}
-            <div className="settings-section">
-              <h3>AI Settings</h3>
-
-              <div className="setting-item">
-                <div className="setting-info">
-                  <span className="setting-label">Default Model</span>
-                  <span className="setting-description">Choose your preferred AI model</span>
-                </div>
-                <select 
-                  id="defaultModel" 
-                  className="setting-select"
-                  value={currentModel}
-                  onChange={(e) => setCurrentModel(e.target.value)}
-                >
-                  <option value="vaultai16-chat">Mistral Nemo 12B</option>
-                  <option value="vaultai16-code">Devstral</option>
-                  <option value="vaultai16-fast">LLaMA 3.2 3B</option>
-                </select>
-              </div>
-
-              <label className="setting-item">
-                <div className="setting-info">
-                  <span className="setting-label">Enable RAG</span>
-                  <span className="setting-description">Use your knowledgebase in conversations</span>
-                </div>
-                <input
-                  type="checkbox"
-                  id="ragEnabled"
-                  className="setting-toggle"
-                  checked={ragEnabled}
-                  onChange={(e) => setRagEnabled(e.target.checked)}
-                />
-              </label>
-
-              <label className="setting-item">
-                <div className="setting-info">
-                  <span className="setting-label">Web Search</span>
-                  <span className="setting-description">Enable web search for current information</span>
-                </div>
-                <input
-                  type="checkbox"
-                  id="webSearchEnabled"
-                  className="setting-toggle"
-                  checked={webSearchEnabled}
-                  onChange={(e) => setWebSearchEnabled(e.target.checked)}
-                />
-              </label>
-            </div>
-
-            {/* Actions */}
-            <div className="modal-footer">
-              <button 
-                type="button" 
-                className="btn btn-danger" 
-                id="clearProfile"
-                onClick={handleClearProfile}
-              >
-                Clear Profile
-              </button>
-              <div className="footer-right">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary"
-                  onClick={onClose}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          </form>
-        )}
-      </div>
     </div>
   );
 }

@@ -3,8 +3,9 @@ import { Layout } from './components/layout/Layout';
 import { useAppStore } from './stores/appStore';
 import { useChatStore } from './stores/chatStore';
 import { useProjectStore } from './stores/projectStore';
+import './index.css';
+import './responsive.css';
 import './App.css';
-import './styles/responsive.css';
 
 function App() {
   const { loadSettings, detectSystemTier } = useAppStore();

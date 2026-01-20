@@ -1,7 +1,9 @@
 import { useRef } from "react";
 import { useChatStore } from "../../stores/chatStore";
 import { useAppStore } from "../../stores/appStore";
-import { ModelSelector } from "../../components/common/ModelSelector";
+import { useUIStore } from "../../stores/uiStore";
+import { ModelSelector } from "./ModelSelector";
+import { SourceToolModal } from "../modals/SourceToolModal";
 
 export function ChatInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -14,6 +16,7 @@ export function ChatInput() {
     setAgentMode,
   } = useAppStore();
   const { sendMessage, isSending } = useChatStore();
+  const { setShowWelcome, openSourceToolModal, sourceToolModalOpen } = useUIStore();
 
   // Handle message send
   const handleSend = async () => {
@@ -27,6 +30,7 @@ export function ChatInput() {
       textareaRef.current.value = "";
       textareaRef.current.style.height = "auto";
     }
+    setShowWelcome(false);
 
     // Send message
     await sendMessage(message, currentModel, {
@@ -56,6 +60,29 @@ export function ChatInput() {
   return (
     <div className="chat-input-container">
       <div className="chat-input-wrapper">
+        {/* Prompt Reference Display */}
+        <div
+          id="chatPromptRef"
+          className="chat-prompt-ref"
+          style={{ display: "none" }}
+        >
+          <span className="prompt-reference-tag">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <span className="prompt-ref-title"></span>
+          </span>
+        </div>
+
         <textarea
           ref={textareaRef}
           id="chatInput"
@@ -77,18 +104,9 @@ export function ChatInput() {
 
           <button
             className="input-control-btn"
-            id="sourceToolBtn"
-            title="Configure context sources"
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16">
-              <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M10,16.5L16,12L10,7.5V16.5Z" />
-            </svg>
-          </button>
-
-          <button
-            className="input-control-btn"
             id="sourceToolBtnAlt"
             title="Source Tool Modal"
+            onClick={openSourceToolModal}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -122,14 +140,14 @@ export function ChatInput() {
             >
               Agent
             </span>
-            <label className="switch" style={{ width: "28px", height: "16px" }}>
+            <label className="switch">
               <input
                 type="checkbox"
                 id="agentModeToggleChat"
                 checked={agentMode}
                 onChange={(e) => setAgentMode(e.target.checked)}
               />
-              <span className="slider" style={{ borderRadius: "16px" }} />
+              <span className="slider" />
             </label>
           </div>
 
@@ -152,6 +170,10 @@ export function ChatInput() {
           </button>
         </div>
       </div>
+        {/* Source Tool Modal */}
+      {sourceToolModalOpen && (
+        <SourceToolModal />
+      )}
     </div>
   );
 }

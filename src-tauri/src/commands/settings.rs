@@ -1,21 +1,6 @@
-use crate::app_state::AppState;
 use crate::types;
-use tauri::State;
+use sysinfo::System;
 
-// ============ Settings Commands ============
-
-#[tauri::command]
-pub fn get_settings(state: State<AppState>) -> Option<types::Settings> {
-    state.settings.lock().unwrap().clone()
-}
-
-#[tauri::command]
-pub fn save_settings(state: State<AppState>, settings: types::Settings) -> types::Settings {
-    *state.settings.lock().unwrap() = Some(settings.clone());
-    settings
-}
-
-// ============ System Commands ============
 
 #[tauri::command]
 pub fn get_system_tier() -> types::SystemTier {
@@ -29,10 +14,12 @@ pub fn get_system_tier() -> types::SystemTier {
 
 #[tauri::command]
 pub fn get_memory_usage() -> types::MemoryUsage {
-    // Dummy memory usage
+    let mut system = System::new_all();
+    system.refresh_memory();
+
     types::MemoryUsage {
-        used: 4 * 1024 * 1024 * 1024,   // 4GB
-        total: 16 * 1024 * 1024 * 1024, // 16GB
-        percentage: 25.0,
+        used: system.used_memory(),
+        total: system.total_memory(),
+        percentage: (system.used_memory() as f64 / system.total_memory() as f64) * 100.0,
     }
 }

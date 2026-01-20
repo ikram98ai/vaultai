@@ -14,6 +14,7 @@ interface UIState {
   // Modals
   profileModalOpen: boolean;
   settingsModalOpen: boolean;
+  sourceToolModalOpen: boolean;
   
   // Notifications
   notifications: Notification[];
@@ -27,6 +28,8 @@ interface UIState {
   closeProfileModal: () => void;
   openSettingsModal: () => void;
   closeSettingsModal: () => void;
+  openSourceToolModal: () => void;
+  closeSourceToolModal: () => void;
   showNotification: (message: string, type?: Notification['type'], duration?: number) => void;
   removeNotification: (id: string) => void;
 }
@@ -38,6 +41,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   showWelcome: true,
   profileModalOpen: false,
   settingsModalOpen: false,
+  sourceToolModalOpen: false,
   notifications: [],
 
   // Navigation
@@ -57,6 +61,10 @@ export const useUIStore = create<UIState>((set, get) => ({
   // Settings modal
   openSettingsModal: () => set({ settingsModalOpen: true }),
   closeSettingsModal: () => set({ settingsModalOpen: false }),
+
+  // Source tool modal
+  openSourceToolModal: () => set({ sourceToolModalOpen: true }),
+  closeSourceToolModal: () => set({ sourceToolModalOpen: false }),
 
   // Notifications
   showNotification: (message, type = 'info', duration = 3000) => {
