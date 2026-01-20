@@ -1,19 +1,166 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useChatStore } from "../stores/chatStore";
 import { Message } from "./common/Message";
 import { ChatInput } from "./common/ChatInput";
 
 export function ChatContainer() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, isSending } = useChatStore();
+  const { messages, isSending, currentChatId, chatHistory, deleteChat, renameChat, togglePinChat } = useChatStore();
+  const [showChatMenu, setShowChatMenu] = useState(false);
+
+  // Get current chat info
+  const currentChat = chatHistory.find(c => c.id === currentChatId);
+  const chatTitle = currentChat?.title || "New Chat";
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleRename = () => {
+    const newTitle = prompt("Rename chat:", chatTitle);
+    if (newTitle && currentChatId) {
+      renameChat(currentChatId, newTitle);
+    }
+    setShowChatMenu(false);
+  };
+
+  const handleDelete = () => {
+    if (confirm("Are you sure you want to delete this chat?") && currentChatId) {
+      deleteChat(currentChatId);
+    }
+    setShowChatMenu(false);
+  };
+
+  const handlePin = () => {
+    if (currentChatId) {
+      togglePinChat(currentChatId);
+    }
+    setShowChatMenu(false);
+  };
+
   return (
     <div className="chat-container" id="chatContainer">
+      {/* Chat Header */}
+      <div className="chat-header" style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '12px 24px',
+        borderBottom: '1px solid var(--border)',
+        backgroundColor: 'var(--bg-primary)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 10
+      }}>
+        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>{chatTitle}</h3>
+        <div className="chat-options" style={{ position: 'relative' }}>
+          <button 
+            className="chat-options-btn" 
+            title="Chat options"
+            onClick={() => setShowChatMenu(!showChatMenu)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              padding: '6px',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="1" />
+              <circle cx="12" cy="5" r="1" />
+              <circle cx="12" cy="19" r="1" />
+            </svg>
+          </button>
+          
+          {showChatMenu && (
+            <div className="chat-action-menu visible" style={{
+              position: 'absolute',
+              top: '100%',
+              right: 0,
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border)',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              minWidth: '160px',
+              zIndex: 100,
+              marginTop: '8px'
+            }}>
+              <button 
+                className="chat-action-item" 
+                onClick={handlePin}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  width: '100%',
+                  padding: '10px 14px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-primary)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M8.5 1L10.5 3L9.5 8L11 9.5L8 12.5L5 9.5L6.5 8L5.5 3L7.5 1H8.5Z" />
+                </svg>
+                {currentChat?.pinned ? "Unpin Chat" : "Pin Chat"}
+              </button>
+              <button 
+                className="chat-action-item" 
+                onClick={handleRename}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  width: '100%',
+                  padding: '10px 14px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-primary)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M11.5 2L14 4.5L5.5 13L2 14L3 10.5L11.5 2Z" />
+                </svg>
+                Rename Chat
+              </button>
+              <button 
+                className="chat-action-item" 
+                onClick={handleDelete}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  width: '100%',
+                  padding: '10px 14px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#ff6b6b',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M4 5L4 13C4 13.5523 4.44772 14 5 14H11C11.5523 14 12 13.5523 12 13V5M2 5H14M6 5V3C6 2.44772 6.44772 2 7 2H9C9.55228 2 10 2.44772 10 3V5" />
+                </svg>
+                Delete Chat
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="chat-messages" id="chatMessages">
         {messages.map((msg, index) => (
           <Message

@@ -3,21 +3,26 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { Message as MessageType } from '../../types';
+import { useChatStore } from '../../stores/chatStore';
 
 interface MessageProps {
   message: MessageType;
   isLast?: boolean;
 }
 
-export function Message({ message }: MessageProps) {
-  const isUser = message.role === 'user';
+export function Message({ message, isLast }: MessageProps) {
+  const { deleteMessage } = useChatStore();
   const [showActions, setShowActions] = useState(false);
+
+  const [copied, setCopied] = useState(false);
+  const isUser = message.role === 'user';
 
   // Copy message content to clipboard
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(message.content);
-      // TODO: Add visual feedback (e.g., toast or icon change)
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('Failed to copy:', error);
     }
@@ -46,20 +51,16 @@ export function Message({ message }: MessageProps) {
             </svg>
         </button>
         {showActions && (
-            <div className="message-action-menu">
-                <button className="message-action-item pin-chat" onClick={() => setShowActions(false)}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M8.5 1L10.5 3L9.5 8L11 9.5L8 12.5L5 9.5L6.5 8L5.5 3L7.5 1H8.5Z" stroke="currentColor" strokeWidth="1.5"/>
-                    </svg>
-                    Pin Chat
-                </button>
-                <button className="message-action-item" onClick={() => setShowActions(false)}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M11.5 2L14 4.5L5.5 13L2 14L3 10.5L11.5 2Z" stroke="currentColor" strokeWidth="1.5"/>
-                    </svg>
-                    Rename Chat
-                </button>
-                <button className="message-action-item" onClick={() => { console.log('Delete message:', message.id); setShowActions(false); }}>
+            <div className="message-action-menu" style={{ display: 'block', opacity: 1, pointerEvents: 'auto', transform: 'translateY(0)' }}>
+                <button 
+                    className="message-action-item" 
+                    onClick={() => { 
+                        if (message.timestamp) {
+                            deleteMessage(message.timestamp); 
+                        }
+                        setShowActions(false); 
+                    }}
+                >
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M4 5L4 13C4 13.5523 4.44772 14 5 14H11C11.5523 14 12 13.5523 12 13V5M2 5H14M6 5V3C6 2.44772 6.44772 2 7 2H9C9.55228 2 10 2.44772 10 3V5" stroke="currentColor" strokeWidth="1.5"/>
                     </svg>
@@ -72,9 +73,28 @@ export function Message({ message }: MessageProps) {
 
   if (isUser) {
     return (
-      <div className={`message user`} id={`message-${message.timestamp || Date.now()}`}>
-        <ActionMenu />
-        <div className="message-content">
+      <div className={`message user`} id={`message-${message.timestamp || Date.now()}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', justifyContent: 'flex-end', position: 'relative' }}>
+        <div className="user-message-actions-wrapper" style={{ display: 'flex', alignItems: 'center', opacity: 0, transition: 'opacity 0.2s' }}>
+           <button 
+             className={`copy-message-btn ${copied ? 'copied' : ''}`} 
+             title={copied ? "Copied!" : "Copy message"} 
+             onClick={handleCopy}
+             style={{ position: 'static', opacity: 1, display: 'flex' }}
+           >
+             {copied ? (
+               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                 <path d="M5 8L7 10L11 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+               </svg>
+             ) : (
+               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                   <path d="M10.5 2H4.5C3.67157 2 3 2.67157 3 3.5V10.5C3 11.3284 3.67157 12 4.5 12H10.5C11.3284 12 12 11.3284 12 10.5V3.5C12 2.67157 11.3284 2 10.5 2Z" stroke="currentColor" strokeWidth="1.5"/>
+                   <path d="M5 12V13.5C5 14.3284 5.67157 15 6.5 15H12.5C13.3284 15 14 14.3284 14 13.5V6.5C14 5.67157 13.3284 5 12.5 5H12" stroke="currentColor" strokeWidth="1.5"/>
+               </svg>
+             )}
+           </button>
+           <ActionMenu />
+        </div>
+        <div className="message-content" style={{ position: 'relative' }}>
           <div className="message-text">{message.content}</div>
           {message.promptRef && (
             <div className="message-prompt-ref">
@@ -87,6 +107,15 @@ export function Message({ message }: MessageProps) {
             </div>
           )}
         </div>
+        <style dangerouslySetInnerHTML={{ __html: `
+            .message.user:hover .user-message-actions-wrapper {
+                opacity: 1 !important;
+            }
+            .message.user .message-actions {
+                position: static;
+                opacity: 1;
+            }
+        ` }} />
       </div>
     );
   }
@@ -95,12 +124,23 @@ export function Message({ message }: MessageProps) {
   return (
     <div className="message-wrapper">
       <div className={`message assistant`} id={`message-${message.timestamp || Date.now()}`}>
-        <button className="copy-message-btn" title="Copy message" onClick={handleCopy}>
+        <button 
+          className={`copy-message-btn ${copied ? 'copied' : ''}`} 
+          title={copied ? "Copied!" : "Copy message"} 
+          onClick={handleCopy}
+        >
+          {copied ? (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 8L7 10L11 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M10.5 2H4.5C3.67157 2 3 2.67157 3 3.5V10.5C3 11.3284 3.67157 12 4.5 12H10.5C11.3284 12 12 11.3284 12 10.5V3.5C12 2.67157 11.3284 2 10.5 2Z" stroke="currentColor" strokeWidth="1.5"/>
                 <path d="M5 12V13.5C5 14.3284 5.67157 15 6.5 15H12.5C13.3284 15 14 14.3284 14 13.5V6.5C14 5.67157 13.3284 5 12.5 5H12" stroke="currentColor" strokeWidth="1.5"/>
             </svg>
+          )}
         </button>
+
         
         <ActionMenu />
 

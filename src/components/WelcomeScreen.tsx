@@ -83,8 +83,9 @@ export function WelcomeScreen() {
         </div>
 
         {/* Input Area */}
-
-        <ChatInput />
+        <div style={{ width: "100%", maxWidth: "600px" }}>
+          <ChatInput textareaRef={textareaRef} />
+        </div>
 
         {/* Quick Actions */}
         <div className="quick-actions">

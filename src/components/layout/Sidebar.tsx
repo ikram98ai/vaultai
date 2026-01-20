@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useChatStore } from '../../stores/chatStore';
 import { useUIStore } from '../../stores/uiStore';
 import type { Tab } from '../../types';
@@ -7,7 +8,8 @@ export function Sidebar() {
     chatHistory, 
     currentChatId, 
     createNewChat, 
-    loadChat 
+    loadChat,
+    togglePinChat
   } = useChatStore();
   
   const { 
@@ -69,8 +71,9 @@ export function Sidebar() {
 
     return groups;
   };
-
   const chatGroups = groupChatsByDate();
+  const [pinnedCollapsed, setPinnedCollapsed] = useState(false);
+  const [historyCollapsed, setHistoryCollapsed] = useState(false);
 
   return (
     <aside className={`sidebar ${sidebarOpen ? 'active' : ''}`}>
@@ -160,60 +163,100 @@ export function Sidebar() {
             </svg>
             Prompts
           </button>
-
-          <button className="nav-item pinned-nav-btn">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-            </svg>
-            Pinned
-          </button>
         </nav>
-
-        {/* Pinned Items Section */}
-        <div className="sidebar-section pinned-section">
-          <div className="pinned-items" id="pinnedItems">
-            {chatGroups['Pinned'].map((chat) => (
-              <div 
-                key={chat.id}
-                className={`history-item ${currentChatId === chat.id ? 'active' : ''}`}
-                onClick={() => handleChatClick(chat.id)}
-              >
-                <span className="history-title">{chat.title}</span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* Scrollable History Section */}
-      <div className="sidebar-content">
-        <div className="sidebar-section">
-          <div className="section-header">
-            <svg viewBox="0 0 24 24" width="20" height="20">
-              <path d="M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3" />
-            </svg>
-            History
-          </div>
-          <div className="section-items">
-            <div className="history-items" id="historyItems">
-              {['Today', 'Yesterday', 'Previous 7 Days', 'Older'].map((group) => (
-                chatGroups[group].length > 0 && (
-                  <div key={group}>
-                    <div className="history-date-group">{group}</div>
-                    {chatGroups[group].map((chat) => (
-                      <div 
-                        key={chat.id}
-                        className={`history-item ${currentChatId === chat.id ? 'active' : ''}`}
-                        onClick={() => handleChatClick(chat.id)}
-                      >
-                        <span className="history-title">{chat.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                )
-              ))}
+      {/* Scrollable Content Section */}
+      <div className="sidebar-content" style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        {/* Pinned Items Section */}
+        {chatGroups['Pinned'].length > 0 && (
+          <div className="sidebar-section pinned-section" style={{ display: 'block', marginBottom: '24px' }}>
+            <div 
+              className="section-header" 
+              onClick={() => setPinnedCollapsed(!pinnedCollapsed)}
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" className="heart-icon-outline" style={{ fill: 'none' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+                </svg>
+                Pinned
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: pinnedCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>
+                <path d="M6 9l6 6 6-6" />
+              </svg>
             </div>
+            {!pinnedCollapsed && (
+              <div className="pinned-items" id="pinnedItems">
+                {chatGroups['Pinned'].map((chat) => (
+                  <div 
+                    key={chat.id}
+                    className={`pinned-item-sidebar ${currentChatId === chat.id ? 'active' : ''}`}
+                  >
+                    <button 
+                      className="pinned-item-content"
+                      onClick={() => handleChatClick(chat.id)}
+                    >
+                      <span className="pinned-item-title">{chat.title}</span>
+                    </button>
+                    <button 
+                      className="unpin-btn" 
+                      title="Unpin"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        togglePinChat(chat.id);
+                      }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                        <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+        )}
+
+        {/* History Section */}
+        <div className="sidebar-section">
+          <div 
+            className="section-header" 
+            onClick={() => setHistoryCollapsed(!historyCollapsed)}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path d="M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3" />
+              </svg>
+              History
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: historyCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </div>
+          {!historyCollapsed && (
+            <div className="section-items">
+              <div className="history-items" id="historyItems">
+                {['Today', 'Yesterday', 'Previous 7 Days', 'Older'].map((group) => (
+                  chatGroups[group].length > 0 && (
+                    <div key={group}>
+                      <div className="history-date-group">{group}</div>
+                      {chatGroups[group].map((chat) => (
+                        <div 
+                          key={chat.id}
+                          className={`history-item ${currentChatId === chat.id ? 'active' : ''}`}
+                          onClick={() => handleChatClick(chat.id)}
+                        >
+                          <span className="history-title">{chat.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

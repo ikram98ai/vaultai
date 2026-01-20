@@ -5,8 +5,14 @@ import { useUIStore } from "../../stores/uiStore";
 import { ModelSelector } from "./ModelSelector";
 import { SourceToolModal } from "../modals/SourceToolModal";
 
-export function ChatInput() {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+type ChatInputProps=  {
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+}
+
+export function ChatInput({textareaRef}:ChatInputProps) {
+
+  if (!textareaRef) 
+      textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const {
     currentModel,

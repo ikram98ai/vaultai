@@ -38,6 +38,7 @@ interface ChatState {
     model: string, 
     options: QueryOptions
   ) => Promise<void>;
+  deleteMessage: (messageTimestamp: number) => Promise<void>;
   
   // Utilities
   generateChatId: () => string;
@@ -295,6 +296,33 @@ export const useChatStore = create<ChatState>((set, get) => ({
       await saveState();
     } finally {
       set({ isSending: false, generationStartTime: null });
+    }
+  },
+
+  deleteMessage: async (messageTimestamp: number) => {
+    const { messages, currentChatId, chatHistory } = get();
+    if (!currentChatId) return;
+
+    const newMessages = messages.filter(m => m.timestamp !== messageTimestamp);
+    set({ messages: newMessages });
+
+    // Find current chat to maintain other properties
+    const existingChat = chatHistory.find(c => c.id === currentChatId);
+    if (!existingChat) return;
+
+    const updatedChat: Chat = {
+      ...existingChat,
+      messages: newMessages,
+      timestamp: Date.now()
+    };
+
+    try {
+      await commands.saveChat(updatedChat);
+      set(state => ({
+        chatHistory: state.chatHistory.map(c => c.id === currentChatId ? updatedChat : c)
+      }));
+    } catch (e) {
+      console.error('Failed to save chat after message deletion:', e);
     }
   },
 }));
