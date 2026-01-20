@@ -15,12 +15,13 @@ import type {
 } from "../../types";
 
 // Helper to save physical file
-async function savePhysicalFile(id: string, base64: string) {
+async function savePhysicalFile(id: string, base64: string, projectId?: string) {
   try {
     // ensure dir
-    const dirExists = await exists('files', { baseDir: BaseDirectory.AppData });
+    const dir = projectId ? `projects/${projectId}` : 'files';
+    const dirExists = await exists(dir, { baseDir: BaseDirectory.AppData });
     if (!dirExists) {
-      await mkdir('files', { baseDir: BaseDirectory.AppData });
+      await mkdir(dir, { baseDir: BaseDirectory.AppData });
     }
     
     // decode base64
@@ -30,7 +31,7 @@ async function savePhysicalFile(id: string, base64: string) {
       bytes[i] = binaryString.charCodeAt(i);
     }
     
-    await writeFile(`files/${id}`, bytes, { baseDir: BaseDirectory.AppData });
+    await writeFile(`${dir}/${id}`, bytes, { baseDir: BaseDirectory.AppData });
   } catch (error) {
     console.error('Failed to save physical file:', error);
     throw error;
@@ -69,7 +70,7 @@ export const sendQuery = (
 
 // ============ File Commands ============
 
-export const uploadFiles = async (files: FileData[]): Promise<UploadResult> => {
+export const uploadFiles = async (files: FileData[], projectId?: string): Promise<UploadResult> => {
   try {
     const uploadedFiles: FileInfo[] = [];
     
@@ -78,7 +79,7 @@ export const uploadFiles = async (files: FileData[]): Promise<UploadResult> => {
       
       // Save physical file
       if (file.data) {
-        await savePhysicalFile(id, file.data);
+        await savePhysicalFile(id, file.data, projectId);
       }
       
       const fileInfo: FileInfo = {
@@ -87,7 +88,8 @@ export const uploadFiles = async (files: FileData[]): Promise<UploadResult> => {
         type: file.type,
         size: file.size,
         uploadedAt: Date.now(),
-        status: "ready"
+        status: "ready",
+        projectId
       };
       
       await sqlService.addFileRecord(fileInfo);

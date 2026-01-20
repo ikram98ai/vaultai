@@ -201,8 +201,9 @@ class TauriSqlService {
     
     // 2. Delete physical files
     for (const f of files) {
+      const dir = f.projectId ? `projects/${f.projectId}` : 'files';
       try {
-        await remove(`files/${f.id}`, { baseDir: BaseDirectory.AppData });
+        await remove(`${dir}/${f.id}`, { baseDir: BaseDirectory.AppData });
       } catch (e) { 
         console.warn(`Failed to delete physical file ${f.id}:`, e); 
       }
@@ -379,6 +380,25 @@ class TauriSqlService {
     }));
   }
 
+  async getFile(fileId: string): Promise<FileInfo | null> {
+    await this.init();
+    if (!this.db) return null;
+
+    const files = await this.db.select<any[]>('SELECT * FROM files WHERE id = $1', [fileId]);
+    if (files.length === 0) return null;
+
+    const f = files[0];
+    return {
+      id: f.id,
+      name: f.name,
+      type: f.type,
+      size: f.size,
+      uploadedAt: f.uploaded_at,
+      status: f.status,
+      projectId: f.project_id
+    };
+  }
+
   // Note: Actual file content upload is handled by Tauri command 'upload_files',
   // this service mainly tracks metadata. If we are moving everything to SQL, 
   // we assume the backend command might still handle the physical write, 
@@ -400,6 +420,18 @@ class TauriSqlService {
     await this.init();
     if (!this.db) return false;
     
+    // 1. Get file info to know the path
+    const file = await this.getFile(fileId);
+    if (file) {
+      const dir = file.projectId ? `projects/${file.projectId}` : 'files';
+      try {
+        await remove(`${dir}/${file.id}`, { baseDir: BaseDirectory.AppData });
+      } catch (e) {
+        console.warn(`Failed to delete physical file ${file.id}:`, e);
+      }
+    }
+
+    // 2. SQL Cleanup
     await this.db.execute('DELETE FROM files WHERE id = $1', [fileId]);
     return true;
   }
