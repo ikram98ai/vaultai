@@ -186,13 +186,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   // Send a message and get AI response
   sendMessage: async (content: string, model: string, options: QueryOptions) => {
-    const { addMessage, currentChatId, generateChatId } = get();
+    const { addMessage, currentChatId, currentProjectId, generateChatId } = get();
     
     // Create chat ID if needed
     let chatId = currentChatId;
     if (!chatId) {
       chatId = generateChatId();
       set({ currentChatId: chatId });
+    }
+    
+    // Inject projectId if not provided but exists in store
+    if (!options.projectId && currentProjectId) {
+      options.projectId = currentProjectId;
     }
     
     // Add user message

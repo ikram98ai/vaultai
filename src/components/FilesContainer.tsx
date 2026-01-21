@@ -26,7 +26,9 @@ export function FilesContainer() {
     setIsLoading(true);
     try {
       const filesData = await getFiles();
-      setFiles(filesData);
+      // Filter out project files from global knowledgebase
+      const globalFiles = filesData.filter(file => !file.projectId);
+      setFiles(globalFiles);
     } catch (error) {
       console.error('Failed to load files:', error);
       showNotification('Failed to load files', 'error');

@@ -57,7 +57,6 @@ export function ProfileModal({ onClose }: ProfileModalProps) {
 
   const handleClearProfile = async () => {
     try {
-      await commands.clearUserProfile();
       setProfile({ name: '', email: '' });
     } catch (error) {
       console.error('Failed to clear profile:', error);

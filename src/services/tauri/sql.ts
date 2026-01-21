@@ -1,6 +1,5 @@
 
 import Database from '@tauri-apps/plugin-sql';
-import { remove, BaseDirectory } from '@tauri-apps/plugin-fs';
 import type { 
   Chat, 
   Message, 
@@ -10,6 +9,7 @@ import type {
   Settings, 
   UserProfile
 } from '../../types';
+import { deletePhysicalFile } from './fs';
 
 class TauriSqlService {
   private db: Database | null = null;
@@ -201,9 +201,8 @@ class TauriSqlService {
     
     // 2. Delete physical files
     for (const f of files) {
-      const dir = f.projectId ? `projects/${f.projectId}` : 'files';
       try {
-        await remove(`${dir}/${f.id}`, { baseDir: BaseDirectory.AppData });
+        await deletePhysicalFile(f.id, f.projectId);
       } catch (e) { 
         console.warn(`Failed to delete physical file ${f.id}:`, e); 
       }
@@ -230,6 +229,29 @@ class TauriSqlService {
     if (!this.db) return [];
 
     const chatRecords = await this.db.select<any[]>('SELECT * FROM chats ORDER BY timestamp DESC');
+    const result: Chat[] = [];
+
+    for (const c of chatRecords) {
+      const messages = await this.getMessagesForChat(c.id);
+      result.push({
+        id: c.id,
+        title: c.title,
+        timestamp: c.timestamp,
+        model: c.model,
+        pinned: !!c.pinned,
+        projectId: c.project_id,
+        messages
+      });
+    }
+
+    return result;
+  }
+
+  async getProjectChats(projectId: string): Promise<Chat[]> {
+    await this.init();
+    if (!this.db) return [];
+
+    const chatRecords = await this.db.select<any[]>('SELECT * FROM chats WHERE project_id = $1 ORDER BY timestamp DESC', [projectId]);
     const result: Chat[] = [];
 
     for (const c of chatRecords) {
@@ -423,9 +445,8 @@ class TauriSqlService {
     // 1. Get file info to know the path
     const file = await this.getFile(fileId);
     if (file) {
-      const dir = file.projectId ? `projects/${file.projectId}` : 'files';
       try {
-        await remove(`${dir}/${file.id}`, { baseDir: BaseDirectory.AppData });
+        await deletePhysicalFile(file.id, file.projectId);
       } catch (e) {
         console.warn(`Failed to delete physical file ${file.id}:`, e);
       }

@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { sqlService } from "./sql";
-import { writeFile, BaseDirectory, exists, mkdir } from '@tauri-apps/plugin-fs';
+import { savePhysicalFile } from "./fs";
 import type {
   Chat,
   Project,
@@ -14,34 +14,14 @@ import type {
   UserProfile,
 } from "../../types";
 
-// Helper to save physical file
-async function savePhysicalFile(id: string, base64: string, projectId?: string) {
-  try {
-    // ensure dir
-    const dir = projectId ? `projects/${projectId}` : 'files';
-    const dirExists = await exists(dir, { baseDir: BaseDirectory.AppData });
-    if (!dirExists) {
-      await mkdir(dir, { baseDir: BaseDirectory.AppData });
-    }
-    
-    // decode base64
-    const binaryString = atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    
-    await writeFile(`${dir}/${id}`, bytes, { baseDir: BaseDirectory.AppData });
-  } catch (error) {
-    console.error('Failed to save physical file:', error);
-    throw error;
-  }
-}
 
 // ============ Chat Commands ============
 
 export const getAllChats = (): Promise<Chat[]> => 
   sqlService.getAllChats();
+
+export const getProjectChats = (projectId: string): Promise<Chat[]> => 
+  sqlService.getProjectChats(projectId);
 
 export const getChat = (chatId: string): Promise<Chat | null> => 
   sqlService.getChat(chatId);
@@ -70,7 +50,7 @@ export const sendQuery = (
 
 // ============ File Commands ============
 
-export const uploadFiles = async (files: FileData[], projectId?: string): Promise<UploadResult> => {
+export const uploadFiles = async (files: FileData[]): Promise<UploadResult> => {
   try {
     const uploadedFiles: FileInfo[] = [];
     
@@ -79,7 +59,7 @@ export const uploadFiles = async (files: FileData[], projectId?: string): Promis
       
       // Save physical file
       if (file.data) {
-        await savePhysicalFile(id, file.data, projectId);
+        await savePhysicalFile(id, file.data);
       }
       
       const fileInfo: FileInfo = {
@@ -89,7 +69,7 @@ export const uploadFiles = async (files: FileData[], projectId?: string): Promis
         size: file.size,
         uploadedAt: Date.now(),
         status: "ready",
-        projectId
+      
       };
       
       await sqlService.addFileRecord(fileInfo);
@@ -144,7 +124,7 @@ export const uploadProjectFiles = async (
       
       // Save physical file
       if (file.data) {
-        await savePhysicalFile(id, file.data);
+        await savePhysicalFile(id, file.data, projectId);
       }
 
       const fileInfo: FileInfo = {
@@ -184,18 +164,6 @@ export const getUserProfile = (): Promise<UserProfile | null> =>
 export const saveUserProfile = (profile: UserProfile): Promise<UserProfile> => 
   sqlService.saveUserProfile(profile);
 
-export const clearUserProfile = async (): Promise<boolean> => {
-  // Clearing profile in our SQL impl can be done by saving a null/empty one 
-  // or implementing a specific clear method. 
-  // For now, let's just save an empty object or handle it if API allowed null.
-  // The interface is UserProfile, not nullable for save.
-  // We'll define clear as "delete the key" or effectively empty.
-  // Or we can just reuse saveUserProfile with empty strings if that's acceptable.
-  // Actually, let's implement a quick clear in SQL Service or just ignore/return true if not critical.
-  // For correctness, I should probably add a clear method to SQL or just set it to empty.
-  // Since I didn't add clearUserProfile to sqlService, I'll return true.
-  return true;
-};
 
 // ============ System Commands ============
 

@@ -10,7 +10,7 @@ interface MessageProps {
   isLast?: boolean;
 }
 
-export function Message({ message, isLast }: MessageProps) {
+export function Message({ message }: MessageProps) {
   const { deleteMessage } = useChatStore();
   const [showActions, setShowActions] = useState(false);
 
