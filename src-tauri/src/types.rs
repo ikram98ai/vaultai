@@ -6,8 +6,16 @@ use serde::{Deserialize, Serialize};
 pub struct QueryOptions {
     pub rag_enabled: bool,
     pub web_search_enabled: bool,
-    pub agent_mode: bool,
+    pub agent_mode_enabled: bool,
+    pub user_profile_enabled: bool,
     pub project_id: Option<String>,
+    pub project_slugs: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatMessage {
+    pub role: String,
+    pub content: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

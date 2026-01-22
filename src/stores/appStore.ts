@@ -10,13 +10,13 @@ interface AppState {
   // Feature toggles
   ragEnabled: boolean;
   webSearchEnabled: boolean;
-  agentMode: boolean;
+  agentModeEnabled: boolean;
   
   // Source tool toggles
   sourceWebEnabled: boolean;
   sourceProfileEnabled: boolean;
-  sourceKnowledgebaseEnabled: boolean;
   sourceProjectsEnabled: boolean;
+  sourceProjectSlugs: string[];
   
   // Theme
   theme: 'dark' | 'light' | 'system';
@@ -34,8 +34,8 @@ interface AppState {
   setAgentMode: (enabled: boolean) => void;
   setSourceWebEnabled: (enabled: boolean) => void;
   setSourceProfileEnabled: (enabled: boolean) => void;
-  setSourceKnowledgebaseEnabled: (enabled: boolean) => void;
   setSourceProjectsEnabled: (enabled: boolean) => void;
+  toggleSourceProject: (slug: string) => void;
   loadSettings: () => Promise<void>;
   saveSettings: () => Promise<void>;
   detectSystemTier: () => Promise<void>;
@@ -48,11 +48,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   systemTier: 'lite',
   ragEnabled: true,
   webSearchEnabled: true,
-  agentMode: false,
+  agentModeEnabled: false,
   sourceWebEnabled: true,
   sourceProfileEnabled: true,
-  sourceKnowledgebaseEnabled: true,
   sourceProjectsEnabled: true,
+  sourceProjectSlugs: (() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('sourceToolProjectToggles') || '{}');
+      return Object.keys(stored).filter(slug => stored[slug]);
+    } catch (e) {
+      return [];
+    }
+  })(),
   settings: null,
   isLoadingSettings: false,
 
@@ -76,11 +83,30 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().saveSettings();
   },
 
-  setAgentMode: (enabled) => set({ agentMode: enabled }),
+  setAgentMode: (enabled) => set({ agentModeEnabled: enabled }),
   setSourceWebEnabled: (enabled) => set({ sourceWebEnabled: enabled }),
   setSourceProfileEnabled: (enabled) => set({ sourceProfileEnabled: enabled }),
-  setSourceKnowledgebaseEnabled: (enabled) => set({ sourceKnowledgebaseEnabled: enabled }),
   setSourceProjectsEnabled: (enabled) => set({ sourceProjectsEnabled: enabled }),
+  
+  toggleSourceProject: (slug) => {
+    set((state) => {
+      const isSelected = state.sourceProjectSlugs.includes(slug);
+      const newSlugs = isSelected
+        ? state.sourceProjectSlugs.filter(s => s !== slug)
+        : [...state.sourceProjectSlugs, slug];
+      
+      // Sync with localStorage for compatibility
+      try {
+        const stored = JSON.parse(localStorage.getItem('sourceToolProjectToggles') || '{}');
+        stored[slug] = !isSelected;
+        localStorage.setItem('sourceToolProjectToggles', JSON.stringify(stored));
+      } catch (e) {
+        console.error('Failed to sync project toggles to localStorage', e);
+      }
+      
+      return { sourceProjectSlugs: newSlugs };
+    });
+  },
 
   loadSettings: async () => {
     set({ isLoadingSettings: true });
@@ -100,12 +126,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   saveSettings: async () => {
-    const { currentModel, ragEnabled, agentMode, webSearchEnabled } = get();
+    const { currentModel, ragEnabled, agentModeEnabled, webSearchEnabled } = get();
     const settings: Settings = {
       model: { chat: currentModel },
       ui: { streamingEnabled: false },
       rag: { enabled: ragEnabled },
-      agent:{enabled: agentMode},
+      agent:{enabled: agentModeEnabled},
       privateSearch: webSearchEnabled,
     };
     

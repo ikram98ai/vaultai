@@ -38,6 +38,7 @@ class TauriSqlService {
     await this.db.execute(`
       CREATE TABLE IF NOT EXISTS projects (
         id TEXT PRIMARY KEY,
+        slug TEXT,
         name TEXT NOT NULL,
         description TEXT,
         color TEXT,
@@ -144,6 +145,7 @@ class TauriSqlService {
       
       result.push({
         id: p.id,
+        slug: p.slug || p.id,
         name: p.name,
         description: p.description,
         color: p.color,
@@ -171,6 +173,7 @@ class TauriSqlService {
 
     return {
       id: p.id,
+      slug: p.slug || p.id,
       name: p.name,
       description: p.description,
       color: p.color,
@@ -188,9 +191,11 @@ class TauriSqlService {
 
     const id = crypto.randomUUID();
     const now = Date.now();
+    const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     const project: Project = {
       id,
+      slug: slug || id,
       name: data.name,
       description: data.description || undefined,
       color: data.color || undefined,
@@ -202,8 +207,8 @@ class TauriSqlService {
     };
 
     await this.db.execute(
-      'INSERT INTO projects (id, name, description, color, icon, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-      [project.id, project.name, project.description || null, project.color || null, project.icon || null, project.createdAt, project.updatedAt]
+      'INSERT INTO projects (id, slug, name, description, color, icon, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+      [project.id, project.slug, project.name, project.description || null, project.color || null, project.icon || null, project.createdAt, project.updatedAt]
     );
 
     return project;
@@ -217,10 +222,15 @@ class TauriSqlService {
     if (!current) return null;
 
     const updated = { ...current, ...updates, updatedAt: Date.now() };
+    
+    // Update slug if name changed
+    if (updates.name) {
+      updated.slug = updates.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
 
     await this.db.execute(
-      'UPDATE projects SET name = $1, description = $2, color = $3, icon = $4, updated_at = $5 WHERE id = $6',
-      [updated.name, updated.description || null, updated.color || null, updated.icon || null, updated.updatedAt, projectId]
+      'UPDATE projects SET name = $1, slug = $2, description = $3, color = $4, icon = $5, updated_at = $6 WHERE id = $7',
+      [updated.name, updated.slug, updated.description || null, updated.color || null, updated.icon || null, updated.updatedAt, projectId]
     );
 
     return updated;

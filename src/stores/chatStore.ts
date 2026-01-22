@@ -262,7 +262,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ isSending: true, generationStartTime: Date.now() });
     
     try {
-      const response = await commands.sendQuery(content, model, options);
+      // Prepare history for RAG
+      const history = get().messages.slice(0, -1).map<Message>(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
+      const response = await commands.sendQuery(content, history, model, {
+        ...options,
+        userProfileEnabled: options.userProfileEnabled ?? true,
+      });
       
       if (response.success && response.content) {
         const { generationStartTime } = get();

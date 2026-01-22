@@ -18,8 +18,11 @@ export function ChatInput({textareaRef}:ChatInputProps) {
     currentModel,
     ragEnabled,
     webSearchEnabled,
-    agentMode,
+    agentModeEnabled,
     setAgentMode,
+    sourceProjectsEnabled,
+    sourceProjectSlugs,
+    sourceProfileEnabled,
   } = useAppStore();
   const { sendMessage, isSending, pendingPrompt, setPendingPrompt } = useChatStore();
   const { setShowWelcome, openSourceToolModal, sourceToolModalOpen } = useUIStore();
@@ -52,9 +55,11 @@ export function ChatInput({textareaRef}:ChatInputProps) {
 
     // Send message
     await sendMessage(message, currentModel, {
-      ragEnabled: ragEnabled,
+      ragEnabled,
       webSearchEnabled,
-      agentMode,
+      agentModeEnabled,
+      projectSlugs: sourceProjectsEnabled?sourceProjectSlugs:[],
+      userProfileEnabled: sourceProfileEnabled,
     });
   };
 
@@ -162,7 +167,7 @@ export function ChatInput({textareaRef}:ChatInputProps) {
               <input
                 type="checkbox"
                 id="agentModeToggleChat"
-                checked={agentMode}
+                checked={agentModeEnabled}
                 onChange={(e) => setAgentMode(e.target.checked)}
               />
               <span className="slider" />

@@ -1,24 +1,27 @@
+import { useEffect } from 'react';
 import { useAppStore } from '../../stores/appStore';
 import { useUIStore } from '../../stores/uiStore';
+import { useProjectStore } from '../../stores/projectStore';
 
 interface SourceItemProps {
   id: string;
   label: string;
-  description: string;
-  icon: React.ReactNode;
+  description?: string;
+  icon?: React.ReactNode;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  isProject?: boolean;
 }
 
-function SourceItem({ label, description, icon, checked, onChange }: SourceItemProps) {
+function SourceItem({ label, description, icon, checked, onChange, isProject }: SourceItemProps) {
   return (
-    <div className="source-item">
+    <div className={`source-item ${isProject ? 'project-item' : ''}`}>
       <div className="source-info">
         <div className="source-label">
           {icon}
           {label}
         </div>
-        <div className="source-desc">{description}</div>
+        {description && <div className="source-desc">{description}</div>}
       </div>
       <label className="switch">
         <input 
@@ -37,9 +40,16 @@ export function SourceToolModal() {
   const { 
     sourceWebEnabled, setSourceWebEnabled,
     sourceProfileEnabled, setSourceProfileEnabled,
-    sourceKnowledgebaseEnabled, setSourceKnowledgebaseEnabled,
-    sourceProjectsEnabled, setSourceProjectsEnabled
+    ragEnabled, setRagEnabled,
+    sourceProjectsEnabled, setSourceProjectsEnabled,
+    sourceProjectSlugs, toggleSourceProject
   } = useAppStore();
+
+  const { projects, loadProjects } = useProjectStore();
+
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
 
   return (
     <div id="sourceToolModal" className="modal" style={{ display: 'flex' }} onClick={closeSourceToolModal}>
@@ -90,8 +100,8 @@ export function SourceToolModal() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"></path>
               </svg>
             }
-            checked={sourceKnowledgebaseEnabled}
-            onChange={setSourceKnowledgebaseEnabled}
+            checked={ragEnabled}
+            onChange={setRagEnabled}
           />
           <hr />
         </div>
@@ -99,7 +109,7 @@ export function SourceToolModal() {
         <div className="source-group">
           <SourceItem 
             id="sourceProjects"
-            label="Projects"
+            label="My Projects"
             description="Use data from your active projects"
             icon={
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" width="20" height="20" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
@@ -111,7 +121,23 @@ export function SourceToolModal() {
           />
         </div>
 
+        {sourceProjectsEnabled && projects.length > 0 && (
+          <div className="source-group project-list" style={{ marginTop: '-8px', marginBottom: '8px' }}>
+            {projects.map((project) => (
+              <SourceItem
+                key={project.id}
+                id={`project-${project.slug}`}
+                label={project.name}
+                checked={sourceProjectSlugs.includes(project.slug)}
+                onChange={() => toggleSourceProject(project.slug)}
+                isProject={true}
+              />
+            ))}
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
+

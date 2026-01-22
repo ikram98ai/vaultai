@@ -48,6 +48,7 @@ export interface PromptReference {
 
 export interface Project {
   id: string;
+  slug: string;
   name: string;
   description?: string;
   color?: string;
@@ -165,8 +166,10 @@ export const MODELS: Model[] = [
 export interface QueryOptions {
   ragEnabled: boolean;
   webSearchEnabled: boolean;
-  agentMode: boolean;
+  agentModeEnabled: boolean;
+  userProfileEnabled: boolean;
   projectId?: string;
+  projectSlugs?: string[];
 }
 
 export interface QueryResponse {

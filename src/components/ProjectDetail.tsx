@@ -31,7 +31,8 @@ export function ProjectDetail() {
     currentModel,
     ragEnabled,
     webSearchEnabled,
-    agentMode
+    agentModeEnabled,
+    sourceProfileEnabled
   } = useAppStore();
   const { showNotification } = useUIStore();
   
@@ -86,7 +87,9 @@ export function ProjectDetail() {
     await sendMessage(content, currentModel, {
       ragEnabled: ragEnabled,
       webSearchEnabled: webSearchEnabled,
-      agentMode: agentMode,
+      agentModeEnabled: agentModeEnabled,
+      userProfileEnabled: sourceProfileEnabled,
+      projectId: currentProject.id,
     });
   };
 

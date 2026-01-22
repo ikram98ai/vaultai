@@ -12,7 +12,8 @@ import type {
   QueryOptions,
   QueryResponse,
   UserProfile,
-  Prompt
+  Prompt,
+  Message
 } from "../../types";
 
 
@@ -44,10 +45,11 @@ export const updateChatProperty = (
 
 export const sendQuery = (
   message: string, 
+  history: Message[],
   model: string, 
   options: QueryOptions
 ): Promise<QueryResponse> => 
-  invoke<QueryResponse>("send_query", { message, model, options });
+  invoke<QueryResponse>("send_query", { message, history, model, options });
 
 // ============ File Commands ============
 
