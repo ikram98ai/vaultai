@@ -12,6 +12,7 @@ import type {
   QueryOptions,
   QueryResponse,
   UserProfile,
+  Prompt
 } from "../../types";
 
 
@@ -179,3 +180,14 @@ export const getMemoryUsage = (): Promise<{
   percentage: number 
 }> => 
   invoke("get_memory_usage");
+
+// ============ Prompt Commands ============
+
+export const getAllPrompts = (): Promise<Prompt[]> => 
+  sqlService.getAllPrompts();
+
+export const savePrompt = (prompt: Prompt): Promise<Prompt> => 
+  sqlService.savePrompt(prompt);
+
+export const deletePrompt = (promptId: string): Promise<boolean> => 
+  sqlService.deletePrompt(promptId);

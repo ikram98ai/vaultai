@@ -7,9 +7,12 @@ import type {
   ProjectData, 
   FileInfo, 
   Settings, 
-  UserProfile
+  UserProfile,
+  Prompt,
+  PromptCategory
 } from '../../types';
 import { deletePhysicalFile } from './fs';
+import { PREMADE_PROMPTS } from '../../data/premadePrompts';
 
 class TauriSqlService {
   private db: Database | null = null;
@@ -21,6 +24,7 @@ class TauriSqlService {
     try {
       this.db = await Database.load(this.dbName);
       await this.createTables();
+      await this.seedPrompts();
     } catch (error) {
       console.error('Failed to initialize database:', error);
       throw error;
@@ -91,6 +95,36 @@ class TauriSqlService {
         value TEXT NOT NULL
       )
     `);
+
+    // Prompts table
+    await this.db.execute(`
+      CREATE TABLE IF NOT EXISTS prompts (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT,
+        content TEXT NOT NULL,
+        category TEXT NOT NULL,
+        icon TEXT
+      )
+    `);
+  }
+
+  private async seedPrompts() {
+    if (!this.db) return;
+    
+    try {
+      // Check if prompts table is empty
+      const countResult = await this.db.select<{count: number}[]>('SELECT COUNT(*) as count FROM prompts');
+      if (countResult[0].count > 0) return;
+
+      console.log('Seeding premade prompts...');
+      for (const prompt of PREMADE_PROMPTS) {
+        await this.savePrompt(prompt);
+      }
+      console.log(`Seeded ${PREMADE_PROMPTS.length} prompts.`);
+    } catch (error) {
+      console.error('Failed to seed prompts:', error);
+    }
   }
 
   // ============ Projects ============
@@ -523,6 +557,44 @@ class TauriSqlService {
     );
 
     return profile;
+  }
+
+  // ============ Prompts ============
+
+  async getAllPrompts(): Promise<Prompt[]> {
+    await this.init();
+    if (!this.db) return [];
+
+    const prompts = await this.db.select<any[]>('SELECT * FROM prompts');
+    return prompts.map(p => ({
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      content: p.content,
+      category: p.category as PromptCategory,
+      icon: p.icon
+    }));
+  }
+
+  async savePrompt(prompt: Prompt): Promise<Prompt> {
+    await this.init();
+    if (!this.db) throw new Error('Database not initialized');
+
+    await this.db.execute(
+      `INSERT OR REPLACE INTO prompts (id, title, description, content, category, icon)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [prompt.id, prompt.title, prompt.description, prompt.content, prompt.category, prompt.icon]
+    );
+
+    return prompt;
+  }
+
+  async deletePrompt(promptId: string): Promise<boolean> {
+    await this.init();
+    if (!this.db) return false;
+
+    await this.db.execute('DELETE FROM prompts WHERE id = $1', [promptId]);
+    return true;
   }
 }
 

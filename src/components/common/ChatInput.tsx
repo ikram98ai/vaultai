@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useChatStore } from "../../stores/chatStore";
 import { useAppStore } from "../../stores/appStore";
 import { useUIStore } from "../../stores/uiStore";
@@ -21,8 +21,20 @@ export function ChatInput({textareaRef}:ChatInputProps) {
     agentMode,
     setAgentMode,
   } = useAppStore();
-  const { sendMessage, isSending } = useChatStore();
+  const { sendMessage, isSending, pendingPrompt, setPendingPrompt } = useChatStore();
   const { setShowWelcome, openSourceToolModal, sourceToolModalOpen } = useUIStore();
+
+  useEffect(() => {
+    if (pendingPrompt && textareaRef.current) {
+      textareaRef.current.value = pendingPrompt;
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height =
+        Math.min(textareaRef.current.scrollHeight, 120) + "px";
+      textareaRef.current.focus();
+      setPendingPrompt(null);
+      setShowWelcome(false);
+    }
+  }, [pendingPrompt, setPendingPrompt, setShowWelcome]);
 
   // Handle message send
   const handleSend = async () => {

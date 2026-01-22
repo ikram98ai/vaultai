@@ -7,6 +7,7 @@ interface ChatState {
   messages: Message[];
   currentChatId: string | null;
   currentProjectId: string | null;
+  pendingPrompt: string | null;
   
   // Chat history
   chatHistory: Chat[];
@@ -22,6 +23,7 @@ interface ChatState {
   updateLastMessage: (content: string) => void;
   setCurrentChatId: (id: string | null) => void;
   setCurrentProjectId: (id: string | null) => void;
+  setPendingPrompt: (content: string | null) => void;
   setIsSending: (sending: boolean) => void;
   
   // Chat operations
@@ -50,6 +52,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   currentChatId: null,
   currentProjectId: null,
+  pendingPrompt: null,
   chatHistory: [],
   isLoadingChats: false,
   isSending: false,
@@ -72,6 +75,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   }),
   setCurrentChatId: (id) => set({ currentChatId: id }),
   setCurrentProjectId: (id) => set({ currentProjectId: id }),
+  setPendingPrompt: (content) => set({ pendingPrompt: content }),
   setIsSending: (sending) => set({ isSending: sending }),
 
   // Generate unique chat ID
