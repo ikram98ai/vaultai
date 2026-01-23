@@ -163,11 +163,13 @@ export function Sidebar() {
   const chatGroups = groupChatsByDate();
 
   return (
-    <aside className={`sidebar ${sidebarOpen ? "active" : ""}`}>
+    <aside
+      className={`fixed top-0 bottom-0 -left-70 lg:left-0 z-1000 w-70 h-screen bg-bg-primary border-r border-border flex flex-col transition-[left] duration-300 ease-out pt-20 lg:pt-0 ${sidebarOpen ? "left-0" : ""}`}
+    >
       {/* VaultAI Logo */}
 
       <button
-        className="sidebar-logo"
+        className="hidden lg:flex items-center p-6.5 shrink-0 bg-transparent border-none cursor-pointer transition-opacity duration-200 hover:opacity-80 active:opacity-60"
         id="homeLogoBtn"
         title="Home"
         onClick={handleHomeClick}
@@ -178,29 +180,27 @@ export function Sidebar() {
           viewBox="0 0 28 31"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="vaultai-logo"
+          className="block h-6 w-auto fill-brand"
         >
           <path
             d="M12.0009 30.2925C11.7548 30.16 10.3919 29.1757 9.65372 28.5889C4.3284 24.3678 1.48276 19.8564 0.50477 14.0894C0.182979 12.1839 0.0441675 10.2847 0.0189291 7.50845L0 5.67866L0.157741 5.40735C0.384887 5.00984 0.675129 4.87734 1.94967 4.57448C5.12341 3.82363 8.22775 2.46075 11.6665 0.315481C12.1649 0 12.1713 0 12.7076 0H13.2502L13.9443 0.447984C16.0075 1.773 18.3673 2.93397 20.6892 3.76053C21.1751 3.93089 21.6105 4.10756 21.6546 4.14542C21.6988 4.18328 21.7366 4.33471 21.7366 4.47983C21.7366 4.75115 21.7303 4.75746 20.9479 5.43889C20.0709 6.18974 19.9384 6.27176 19.5409 6.27807C18.9036 6.28438 15.7867 4.87103 13.5278 3.55863C13.1177 3.31886 12.7391 3.12326 12.695 3.12326C12.6445 3.12326 12.2091 3.35672 11.7296 3.63434C9.35086 5.02877 6.54308 6.2276 3.91197 6.97844C3.35672 7.13618 2.97814 7.2813 2.8835 7.36964L2.72576 7.50845L2.76992 8.80192C2.97183 15.3261 4.43566 19.3138 8.10786 23.3077C8.70728 23.9639 9.98182 25.1565 10.8147 25.8379C11.5718 26.4689 12.6003 27.226 12.695 27.226C12.8022 27.226 13.7991 26.4752 14.8276 25.6234C15.8182 24.7968 17.5849 23.0238 18.2853 22.1468C20.4179 19.4967 21.6925 16.5817 22.2414 13.124C22.3928 12.165 22.2856 12.3479 23.7116 10.6002C24.7274 9.35086 24.7463 9.33824 25.005 9.31931C25.2006 9.30669 25.2827 9.32562 25.3079 9.39503C25.3584 9.52122 25.2385 11.3636 25.106 12.4615C24.557 17.2 23.0995 20.7587 20.2981 24.1974C19.5788 25.0744 17.6796 26.9736 16.6511 27.8381C15.8056 28.551 14.468 29.5669 13.7045 30.0906L13.2754 30.3808H12.7265C12.3732 30.3808 12.1145 30.3493 12.0009 30.2925Z"
-            fill="#FFBA08"
           />
 
           <path
             d="M12.2408 21.9702C12.1903 21.8881 11.7739 20.9543 11.3196 19.9006C9.48977 15.6353 8.68214 14.3544 7.44545 13.774C7.07319 13.6036 6.94068 13.5784 6.25924 13.5405L5.48947 13.5026L5.47054 13.2313C5.4453 12.8717 5.58411 12.6572 6.24032 12.0388C6.84604 11.4709 7.39498 11.1239 8.0007 10.9409C8.35404 10.8274 8.55595 10.8147 9.19953 10.8274C9.93145 10.8526 9.98823 10.8652 10.4425 11.0797C11.4331 11.5593 12.2218 12.4679 12.9727 13.9822L13.2882 14.6194L15.4461 12.4552C19.5852 8.30351 22.8662 5.38847 25.9326 3.12963C26.7403 2.53021 27.1252 2.35354 27.5227 2.37878L27.8255 2.39771V2.7826C27.8255 3.1107 27.794 3.21796 27.6047 3.52082C27.3586 3.91202 25.5919 6.14562 22.6643 9.77366C16.4682 17.4398 14.6447 19.7555 13.6604 21.2319C13.0736 22.109 13.0673 22.1153 12.6698 22.1153C12.3922 22.1153 12.3228 22.09 12.2408 21.9702Z"
-            fill="#FFBA08"
           />
         </svg>
       </button>
 
       {/* Fixed Top Section */}
 
-      <div className="sidebar-top">
+      <div className="shrink-0 px-4 pb-4 overflow-visible">
         {/* Search */}
 
-        <div className="sidebar-search">
-          <div className="search-wrapper">
+        <div className="mb-2">
+          <div className="relative flex items-center">
             <svg
-              className="search-icon"
+              className="absolute left-3 fill-text-muted pointer-events-none"
               viewBox="0 0 24 24"
               width="16"
               height="16"
@@ -211,16 +211,16 @@ export function Sidebar() {
             <input
               type="text"
               placeholder="Search ⌘K"
-              className="search-input"
+              className="w-full bg-[#1A1B1E] border border-transparent rounded-lg py-2 px-3 pl-9 text-text-primary text-sm outline-none transition-all duration-200 focus:border-accent focus:bg-bg-tertiary placeholder:text-text-muted"
             />
           </div>
         </div>
 
         {/* Navigation */}
 
-        <nav className="sidebar-nav">
+        <nav className="flex flex-col gap-0.5">
           <button
-            className={`nav-item ${activeTab === "chat" ? "active" : ""}`}
+            className={`flex items-center gap-3 px-3 py-2.5 bg-transparent border-none rounded-lg text-text-secondary text-sm font-medium cursor-pointer transition-all duration-200 text-left w-full hover:bg-hover-bg hover:text-text-primary group relative ${activeTab === "chat" ? "bg-active-bg text-text-primary" : ""}`}
             data-tab="chat"
             onClick={() => handleNavClick("chat")}
           >
@@ -232,6 +232,7 @@ export function Sidebar() {
               stroke="currentColor"
               width="20"
               height="20"
+              className="shrink-0 stroke-current text-current"
             >
               <path
                 strokeLinecap="round"
@@ -240,7 +241,7 @@ export function Sidebar() {
               />
             </svg>
 
-            <span>Chat</span>
+            <span className="flex-1">Chat</span>
 
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -250,7 +251,7 @@ export function Sidebar() {
               stroke="currentColor"
               width="16"
               height="16"
-              className="nav-item-plus"
+              className="ml-auto text-gray-500 transition-colors duration-200 group-hover:text-gray-400 shrink-0"
             >
               <path
                 strokeLinecap="round"
@@ -261,7 +262,7 @@ export function Sidebar() {
           </button>
 
           <button
-            className={`nav-item ${activeTab === "files" ? "active" : ""}`}
+            className={`flex items-center gap-3 px-3 py-2.5 bg-transparent border-none rounded-lg text-text-secondary text-sm font-medium cursor-pointer transition-all duration-200 text-left w-full hover:bg-hover-bg hover:text-text-primary group relative ${activeTab === "files" ? "bg-active-bg text-text-primary" : ""}`}
             data-tab="files"
             onClick={() => handleNavClick("files")}
           >
@@ -273,6 +274,7 @@ export function Sidebar() {
               stroke="currentColor"
               width="20"
               height="20"
+              className="shrink-0 stroke-current text-current"
             >
               <path
                 strokeLinecap="round"
@@ -280,11 +282,11 @@ export function Sidebar() {
                 d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
               />
             </svg>
-            Knowledgebase
+            <span className="flex-1">Knowledgebase</span>
           </button>
 
           <button
-            className={`nav-item ${activeTab === "projects" ? "active" : ""}`}
+            className={`flex items-center gap-3 px-3 py-2.5 bg-transparent border-none rounded-lg text-text-secondary text-sm font-medium cursor-pointer transition-all duration-200 text-left w-full hover:bg-hover-bg hover:text-text-primary group relative ${activeTab === "projects" ? "bg-active-bg text-text-primary" : ""}`}
             data-tab="projects"
             onClick={() => handleNavClick("projects")}
           >
@@ -296,6 +298,7 @@ export function Sidebar() {
               stroke="currentColor"
               width="20"
               height="20"
+              className="shrink-0 stroke-current text-current"
             >
               <path
                 strokeLinecap="round"
@@ -303,11 +306,11 @@ export function Sidebar() {
                 d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"
               />
             </svg>
-            Projects
+            <span className="flex-1">Projects</span>
           </button>
 
           <button
-            className={`nav-item ${activeTab === "images" ? "active" : ""}`}
+            className={`flex items-center gap-3 px-3 py-2.5 bg-transparent border-none rounded-lg text-text-secondary text-sm font-medium cursor-pointer transition-all duration-200 text-left w-full hover:bg-hover-bg hover:text-text-primary group relative ${activeTab === "images" ? "bg-active-bg text-text-primary" : ""}`}
             data-tab="images"
             onClick={() => handleNavClick("images")}
           >
@@ -319,6 +322,7 @@ export function Sidebar() {
               stroke="currentColor"
               width="20"
               height="20"
+              className="shrink-0 stroke-current text-current"
             >
               <path
                 strokeLinecap="round"
@@ -326,11 +330,11 @@ export function Sidebar() {
                 d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
               />
             </svg>
-            Generated Images
+            <span className="flex-1">Generated Images</span>
           </button>
 
           <button
-            className={`nav-item ${activeTab === "prompts" ? "active" : ""}`}
+            className={`flex items-center gap-3 px-3 py-2.5 bg-transparent border-none rounded-lg text-text-secondary text-sm font-medium cursor-pointer transition-all duration-200 text-left w-full hover:bg-hover-bg hover:text-text-primary group relative ${activeTab === "prompts" ? "bg-active-bg text-text-primary" : ""}`}
             data-tab="prompts"
             onClick={() => handleNavClick("prompts")}
           >
@@ -341,6 +345,7 @@ export function Sidebar() {
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
+              className="shrink-0 stroke-current text-current"
             >
               <path
                 strokeLinecap="round"
@@ -354,7 +359,7 @@ export function Sidebar() {
                 d="M13 3v5a2 2 0 002 2h5"
               />
             </svg>
-            Prompts
+            <span className="flex-1">Prompts</span>
           </button>
         </nav>
       </div>
@@ -362,26 +367,19 @@ export function Sidebar() {
       {/* Scrollable Content Section */}
 
       <div
-        className="sidebar-content"
-        style={{ display: "flex", flexDirection: "column", overflowY: "auto" }}
+        className="flex-1 overflow-y-auto px-4 pb-5 min-h-0 flex flex-col"
       >
         {/* Pinned Items Section */}
 
         {chatGroups["Pinned"].length > 0 && (
           <div
-            className="sidebar-section pinned-section"
-            style={{ display: "block", marginBottom: "24px" }}
+            className="mb-0 pb-0 relative block"
           >
             <div
-              className="section-header"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
+              className="flex items-center gap-3 px-3 py-2 mb-1 text-text-secondary text-sm font-medium sticky top-0 z-10 bg-bg-primary border-b border-border justify-between"
             >
               <div
-                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                className="flex items-center gap-2"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -390,8 +388,7 @@ export function Sidebar() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
-                  className="heart-icon-outline"
-                  style={{ fill: "none" }}
+                  className="fill-none stroke-current"
                 >
                   <path
                     strokeLinecap="round"
@@ -403,21 +400,30 @@ export function Sidebar() {
               </div>
             </div>
 
-            <div className="pinned-items" id="pinnedItems">
+            <div className="flex flex-col gap-2 px-3 pl-8 pr-0 relative overflow-visible" id="pinnedItems">
+              {/* Vertical line for pinned items */}
+              <div className="absolute left-8.5 top-0 bottom-0 w-px bg-border opacity-50"></div>
+
               {chatGroups["Pinned"].map((chat) => (
                 <div
                   key={chat.id}
-                  className={`pinned-item-sidebar ${currentChatId === chat.id ? "active" : ""}`}
+                  className={`flex items-center rounded-lg transition-all duration-200 relative w-[calc(100%-10px)] mr-2.5 hover:bg-hover-bg group ${currentChatId === chat.id ? "active" : ""}`}
                 >
+                  {/* Active indicator */}
+                  <div className={`absolute -left-2.5 top-1/2 -translate-y-1/2 w-1 h-0 bg-brand rounded-full transition-[height] duration-200 z-10 ${currentChatId === chat.id ? "h-4" : ""}`}></div>
+                  
+                  {/* Fade out effect */}
+                  <div className="absolute right-0 top-0 bottom-0 w-17.5 bg-linear-to-r from-transparent to-bg-primary via-bg-primary/80 pointer-events-none z-1"></div>
+
                   <button
-                    className="pinned-item-content"
+                    className="flex-1 flex items-center px-3 py-2 pl-[calc(12px)] bg-transparent border-none text-text-secondary text-sm cursor-pointer text-left whitespace-nowrap overflow-hidden text-ellipsis transition-colors duration-200 hover:text-text-primary"
                     onClick={() => handleChatClick(chat.id)}
                   >
-                    <span className="pinned-item-title">{chat.title}</span>
+                    <span className="overflow-hidden text-ellipsis text-inherit">{chat.title}</span>
                   </button>
 
                   <button
-                    className="unpin-btn"
+                    className="flex items-center justify-center w-6 h-6 bg-transparent border-none rounded hover:bg-white/10 cursor-pointer transition-all duration-200 mr-2.5 opacity-0 absolute right-0 z-20 group-hover:opacity-100"
                     title="Unpin"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -431,6 +437,7 @@ export function Sidebar() {
                       fill="currentColor"
                       width="14"
                       height="14"
+                      className="fill-text-secondary"
                     >
                       <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
                     </svg>
@@ -443,46 +450,50 @@ export function Sidebar() {
 
         {/* History Section */}
 
-        <div className="sidebar-section">
+        <div className="mb-0 pb-0 relative">
           <div
-            className="section-header"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
+            className="flex items-center gap-3 px-3 py-2 mb-1 text-text-secondary text-sm font-medium sticky top-0 z-10 bg-bg-primary border-b border-border justify-between"
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <svg viewBox="0 0 24 24" width="20" height="20">
+            <div className="flex items-center gap-2">
+              <svg viewBox="0 0 24 24" width="20" height="20" className="fill-current shrink-0">
                 <path d="M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3" />
               </svg>
               History
             </div>
           </div>
 
-          <div className="section-items">
-            <div className="history-items" id="historyItems">
+          <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-2 mb-1 pl-8 pr-0 relative" id="historyItems">
+              {/* Vertical line for history items */}
+              <div className="absolute left-8.5 top-0 bottom-0 w-px bg-border opacity-50"></div>
+
               {["Today", "Yesterday", "Previous 7 Days", "Older"].map(
                 (group) =>
                   chatGroups[group].length > 0 && (
                     <div key={group}>
-                      <div className="history-date-group">{group}</div>
+                      <div className="text-xs text-text-muted font-medium uppercase tracking-[0.5px] px-3 py-2 pb-1">{group}</div>
 
                       {chatGroups[group].map((chat) => (
                         <div
                           key={chat.id}
-                          className={`dynamic-history-item history-item-container ${currentChatId === chat.id ? "active" : ""}`}
+                          className={`flex items-center relative w-[calc(100%-10px)] mb-0.5 mr-2.5 ml-0 transition-all duration-200 hover:bg-hover-bg group ${currentChatId === chat.id ? "active" : ""}`}
                           data-chat-id={chat.id}
                         >
+                           {/* Active indicator */}
+                           <div className={`absolute -left-2.5 top-1/2 -translate-y-1/2 w-1 h-0 bg-brand rounded-full transition-[height] duration-200 ${currentChatId === chat.id ? "h-4" : ""}`}></div>
+                  
+                          {/* Fade out */}
+                          <div className="absolute right-0 top-0 bottom-0 w-17.5 bg-linear-to-r from-transparent to-bg-primary via-bg-primary/80 pointer-events-none z-1"></div>
+
                           <button
-                            className="history-item-content"
+                            className="flex-1 flex items-center px-3 py-2 pl-3 bg-transparent border-none text-text-secondary text-sm cursor-pointer text-left whitespace-nowrap overflow-hidden text-ellipsis transition-colors duration-200 hover:text-text-primary outline-none rounded-md min-w-0"
                             onClick={() => handleChatClick(chat.id)}
                           >
                             {chat.title}
                           </button>
 
                           <button
-                            className="history-menu-btn"
+                            className="flex items-center justify-center w-7 h-7 bg-transparent border-none rounded-md cursor-pointer text-text-secondary opacity-0 transition-all duration-200 absolute right-0 top-1/2 -translate-y-1/2 z-20 group-hover:opacity-100 hover:bg-hover-bg hover:text-text-primary"
                             title="More options"
                             onClick={(e) => handleMenuClick(e, chat.id)}
                           >
@@ -491,6 +502,7 @@ export function Sidebar() {
                               width="16"
                               height="16"
                               fill="currentColor"
+                              className="pointer-events-none"
                             >
                               <circle cx="12" cy="5" r="2" />
 
@@ -502,15 +514,16 @@ export function Sidebar() {
 
                           {activeMenuId === chat.id && (
                             <div
-                              className="chat-context-menu"
+                              className="bg-bg-secondary border border-border rounded-lg p-1 shadow-[0_4px_12px_rgba(0,0,0,0.3)] min-w-40 z-1000 fixed"
                               style={{
-                                position: "fixed",
                                 left: `${menuPosition.x}px`,
                                 top: `${menuPosition.y}px`,
-                                zIndex: 1000,
                               }}
                             >
-                              <button onClick={() => handleTogglePin(chat.id)}>
+                              <button 
+                                onClick={() => handleTogglePin(chat.id)}
+                                className="w-full px-3 py-2 bg-none border-none text-text-primary cursor-pointer rounded text-left text-[13px] transition-colors duration-200 flex items-center gap-2 hover:bg-hover-bg"
+                              >
                                 {chat.pinned ? (
                                   <>
                                     <svg
@@ -545,6 +558,7 @@ export function Sidebar() {
                                 onClick={() =>
                                   handleRename(chat.id, chat.title)
                                 }
+                                className="w-full px-3 py-2 bg-none border-none text-text-primary cursor-pointer rounded text-left text-[13px] transition-colors duration-200 flex items-center gap-2 hover:bg-hover-bg"
                               >
                                 <svg
                                   viewBox="0 0 24 24"
@@ -561,7 +575,7 @@ export function Sidebar() {
                               </button>
 
                               <button
-                                className="delete"
+                                className="w-full px-3 py-2 bg-none border-none text-[#ff6b6b] cursor-pointer rounded text-left text-[13px] transition-colors duration-200 flex items-center gap-2 hover:bg-hover-bg"
                                 onClick={() =>
                                   handleDelete(chat.id, chat.title)
                                 }
@@ -592,13 +606,13 @@ export function Sidebar() {
 
       {/* Settings and Account */}
 
-      <div className="sidebar-footer">
+      <div className="p-4 shrink-0">
         <button
-          className="account-btn"
+          className="flex items-center p-2 bg-transparent border-none rounded-lg cursor-pointer transition-all duration-200 w-full hover:bg-hover-bg"
           id="accountBtn"
           onClick={openProfileModal}
         >
-          <div className="account-avatar">?</div>
+          <div className="w-8 h-8 bg-bg-input rounded-md flex items-center justify-center">?</div>
         </button>
       </div>
     </aside>

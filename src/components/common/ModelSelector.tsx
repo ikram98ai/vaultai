@@ -27,32 +27,34 @@ export function ModelSelector() {
   };
 
   return (
-    <div className="model-selector-wrapper" ref={dropdownRef}>
+    <div className="relative flex items-center gap-2" ref={dropdownRef}>
       <button 
-        className="model-selector-btn" 
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-transparent border border-border rounded-full text-text-secondary text-[13px] font-sans cursor-pointer transition-all hover:border-accent" 
         id="modelSelectorBtn"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="model-name">{currentModelInfo.name}</span>
-        <svg viewBox="0 0 24 24" width="12" height="12">
+        <span className="font-thin text-xs">{currentModelInfo.name}</span>
+        <svg viewBox="0 0 24 24" width="12" height="12" className="fill-current">
           <path d="M7,10L12,15L17,10H7Z" />
         </svg>
       </button>
 
       {/* Model Dropdown */}
-      <div className={`model-dropdown-menu ${isOpen ? 'show' : ''}`} id="modelDropdown">
-        {MODELS.map((model) => (
-          <button
-            key={model.id}
-            className={`model-option ${currentModel === model.id ? 'active' : ''}`}
-            data-model={model.id}
-            onClick={() => handleModelSelect(model.id)}
-          >
-            <span className="model-title">{model.name}</span>
-            <span className="model-desc">{model.description}</span>
-          </button>
-        ))}
-      </div>
+      {isOpen && (
+        <div className="absolute bottom-full right-0 mb-2 bg-bg-primary border border-border rounded-xl p-2 min-w-60 shadow-2xl z-100" id="modelDropdown">
+          {MODELS.map((model) => (
+            <button
+              key={model.id}
+              className={`flex flex-col items-start p-3 bg-transparent border-none rounded-lg text-text-primary font-sans cursor-pointer transition-all text-left w-full mb-1 last:mb-0 hover:bg-hover-bg ${currentModel === model.id ? 'bg-accent/10 text-accent' : ''}`}
+              data-model={model.id}
+              onClick={() => handleModelSelect(model.id)}
+            >
+              <span className="text-sm font-semibold leading-tight mb-0.5">{model.name}</span>
+              <span className="text-xs text-text-muted leading-tight">{model.description}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

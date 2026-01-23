@@ -1,12 +1,12 @@
 import { useRef, useEffect, useState } from "react";
 import { useProjectStore } from "../stores/projectStore";
 import { useChatStore } from "../stores/chatStore";
+import { useAppStore } from "../stores/appStore";
 import { useUIStore } from "../stores/uiStore";
 import { Message } from "./common/Message";
 import { ModelSelector } from "./common/ModelSelector";
 import type { FileData } from "../types";
 import { deleteFile } from "../services/tauri/commands";
-import { useAppStore } from "../stores/appStore";
 
 export function ProjectDetail() {
   const { 
@@ -54,19 +54,15 @@ export function ProjectDetail() {
         loadChat(projectChats[0].id);
       } else {
         // Create a new chat for this project
-        // We need to ensure the store knows we are starting fresh
         setMessages([]);
         createNewChat();
-        // The store's createNewChat doesn't reset messages if called directly? 
-        // We did setMessages([]) so it's fine.
-        // currentProjectId is set, so next message will be scoped.
       }
     }
     
     return () => {
       setCurrentProjectId(null);
     };
-  }, [currentProject]); // Only run when project changes
+  }, [currentProject]);
 
   useEffect(() => {
     chatMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -167,148 +163,155 @@ export function ProjectDetail() {
   };
 
   return (
-    <div className="content">
-      <div className="project-detail-header">
-        <div className="button" id="backToProjects" onClick={handleBack}>
-          <svg className="vector-icon" viewBox="0 0 24 24" width="20" height="20">
-            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor" />
+    <div className="flex-1 flex flex-col h-full bg-bg-primary overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center p-4 border-b border-border bg-bg-primary shrink-0">
+        <button 
+          className="flex items-center gap-2 bg-transparent border-none text-text-secondary cursor-pointer hover:text-text-primary transition-colors text-sm font-medium"
+          onClick={handleBack}
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
           </svg>
-          <div className="back-to-projects">Back to Projects</div>
+          Back to Projects
+        </button>
+        <div className="flex-1 text-center ">
+            <h2 className="text-lg font-semibold text-brand m-0">{currentProject.name}</h2>
         </div>
-        <b className="shawnee">{currentProject.name}</b>
-        <div style={{ width: "140px" }}></div>
+        <div className="w-35"></div>
       </div>
-      <div className="content-child"></div>
-      <div className="project-content">
-        <div className="project-file-column">
-          <b className="project-files-title">Project Files</b>
-          <div 
-            className={`drop-files-bucket ${isDragging ? 'dragging' : ''}`} 
-            id="projectUploadZone"
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={handleDrop}
-            onClick={() => document.getElementById('projectFileInput')?.click()}
-            style={{ cursor: 'pointer' }}
-          >
-            <svg 
-              className="vector-icon1" 
-              xmlns="http://www.w3.org/2000/svg" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              strokeWidth="1.5" 
-              stroke="currentColor" 
-              width="38" 
-              height="38"
+
+      <div className="flex-1 flex min-h-0">
+        {/* Files Column */}
+        <div className="w-75 border-r border-border bg-bg-primary flex flex-col min-w-62.5 shrink-0">
+          <div className="p-4 border-b border-border">
+            <h3 className="text-sm font-semibold text-text-primary m-0 mb-3">Project Files</h3>
+            <div 
+              className={`border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer transition-all hover:border-accent hover:bg-bg-tertiary ${isDragging ? 'border-accent bg-bg-tertiary' : ''}`}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
+              onClick={() => document.getElementById('projectFileInput')?.click()}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-            </svg>
-            <div className="drop-files-here-to-upload-to-t-parent">
-              <b className="drop-files-title">Drop files here to upload to this project</b>
-              <div className="files-will-be">Files will be organized in the Project's Knowledgebase folder</div>
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                strokeWidth="1.5" 
+                stroke="currentColor" 
+                width="32" 
+                height="32"
+                className="mx-auto mb-2 text-text-muted"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+              </svg>
+              <p className="text-xs text-text-muted m-0 font-medium">Drop files to upload</p>
+              <input 
+                  type="file" 
+                  id="projectFileInput" 
+                  multiple 
+                  className="hidden" 
+                  onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 0) handleFileUpload(files);
+                  }}
+              />
             </div>
-            <input 
-                type="file" 
-                id="projectFileInput" 
-                multiple 
-                style={{ display: "none" }} 
-                onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    if (files.length > 0) handleFileUpload(files);
-                }}
-            />
           </div>
           
-          {/* Improved File List */}
-          <div className="files-grid" style={{ marginTop: '20px', gridTemplateColumns: '1fr' }}>
+          <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
             {isUploading && (
-              <div className="file-item uploading" style={{ opacity: 0.7 }}>
-                <div className="kb-file-content">
-                  <div className="spinner" style={{ width: '16px', height: '16px', marginRight: '8px' }}></div>
-                  <div className="kb-file-name">Uploading files...</div>
-                </div>
+              <div className="flex items-center gap-3 p-3 bg-bg-tertiary rounded-lg opacity-70">
+                <div className="w-4 h-4 border-2 border-border border-t-accent rounded-full animate-spin"></div>
+                <span className="text-xs text-text-secondary">Uploading files...</span>
               </div>
             )}
             {projectFiles.map((file) => (
-              <div key={file.id} className="file-item">
-                <div className="kb-file-content">
-                    <div className="vector-icon2">
+              <div key={file.id} className="bg-bg-primary border border-border rounded-lg p-3 group relative hover:border-accent transition-colors">
+                <div className="flex items-start gap-3">
+                    <div className="text-accent-primary shrink-0 mt-0.5">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" width="16" height="16">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                         </svg>
                     </div>
-                    <div className="kb-file-name">{file.name}</div>
-                    <div className="kb-file-meta">
-                        <span className="date-and-time">{formatDate(file.uploadedAt)}</span>
-                        <span className="date-and-time">• {formatFileSize(file.size)}</span>
+                    <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-text-primary truncate mb-1" title={file.name}>{file.name}</div>
+                        <div className="text-[10px] text-text-muted flex items-center gap-1">
+                            <span>{formatDate(file.uploadedAt)}</span>
+                            <span>• {formatFileSize(file.size)}</span>
+                        </div>
                     </div>
-                    <div className="file-actions">
-                        <button 
-                          className="file-delete-btn" 
-                          title="Delete file"
-                          onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteFile(file.id);
-                          }}
-                        >
-                            ×
-                        </button>
-                    </div>
+                    <button 
+                      className="opacity-0 group-hover:opacity-100 absolute top-2 right-2 p-1 text-text-muted hover:text-red-400 hover:bg-hover-bg rounded transition-all" 
+                      title="Delete file"
+                      onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteFile(file.id);
+                      }}
+                    >
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
               </div>
             ))}
-            {projectFiles.length === 0 && (
-              <div className="no-files-project" style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)' }}>
-                No files uploaded to this project yet.
+            {projectFiles.length === 0 && !isUploading && (
+              <div className="text-center p-4 text-text-muted text-xs italic">
+                No project files yet.
               </div>
             )}
           </div>
         </div>
-        <div className="project-content-child"></div>
-        <div className="chat-column">        
-          <b className="project-files-title">Chat with Project</b>
-          <div className="project-chat-messages" id="projectChatMessages">
-            {messages.map((msg, index) => (
-              <Message key={index} message={msg} isLast={index === messages.length - 1} />
-            ))}
-            {isSending && (
-              <div className="message message-assistant">
-                <div className="typing-indicator">
-                  <span className="typing-dot"></span>
-                  <span className="typing-dot"></span>
-                  <span className="typing-dot"></span>
-                </div>
-              </div>
-            )}
-            <div ref={chatMessagesEndRef} />
-          </div>
-          <div className="chat-bubble">
-            <div className="chat-input-wrapper">
-              <input
-                type="text"
-                ref={chatInputRef}
-                id="projectChatInput"
-                className="what-do-you"
-                placeholder="What do you want to know about this Project?"
-                onKeyDown={handleKeyDown}
-                disabled={isSending}
-              />
-              <div className="chat-input-controls">
-                <div className="model-selector-wrapper">
-                  <ModelSelector />
-                </div>
-                <div 
-                    className="rectangle-parent" 
-                    id="projectChatSendBtn"
-                    onClick={handleSendMessage}
-                    style={{ cursor: isSending ? 'not-allowed' : 'pointer' }}
-                >
-                  <div className="frame-child"></div>
-                  <div className="frame-item"></div>
-                </div>
-              </div>
+
+        {/* Chat Column */}
+        <div className="flex-1 flex flex-col min-w-0 bg-bg-primary relative">
+            <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-6" id="projectChatMessages">
+                {messages.map((msg, index) => (
+                    <Message key={index} message={msg} isLast={index === messages.length - 1} />
+                ))}
+                {isSending && (
+                    <div className="flex justify-start relative w-full">
+                        <div className="w-8 h-8 rounded-full bg-accent mr-3 mt-1 flex items-center justify-center shrink-0">
+                            <span className="text-white text-xs">AI</span> {/* Placeholder avatar if needed */}
+                        </div>
+                        <div className="bg-bg-secondary border border-border rounded-lg p-4 rounded-bl-sm">
+                            <div className="flex items-center gap-1 py-1">
+                                <span className="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce"></span>
+                                <span className="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                                <span className="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                <div ref={chatMessagesEndRef} />
             </div>
-          </div>
+
+            {/* Chat Input Area */}
+            <div className="p-4 border-t border-border bg-bg-primary">
+                <div className="max-w-4xl mx-auto relative bg-bg-secondary/30 border border-border rounded-xl p-3 focus-within:ring-1 focus-within:ring-bg-input transition-all">
+                    <input
+                        type="text"
+                        ref={chatInputRef}
+                        className="w-full bg-transparent border-none text-text-primary text-base outline-none placeholder:text-text-muted mb-2"
+                        placeholder="What do you want to know about this Project?"
+                        onKeyDown={handleKeyDown}
+                        disabled={isSending}
+                    />
+                    <div className="flex items-center justify-end gap-3">
+                        <ModelSelector />
+                        <button 
+                            className={`w-8 h-8 flex items-center justify-center bg-text-primary text-bg-primary rounded-full transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${isSending ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                            onClick={handleSendMessage}
+                            disabled={isSending}
+                        >
+                             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
       </div>
     </div>

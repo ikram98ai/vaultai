@@ -12,10 +12,10 @@ export function Layout() {
   } = useUIStore();
 
   return (
-    <div id="app">
+    <div className="flex h-screen overflow-hidden bg-bg-primary text-text-primary font-sans">
       {/* Mobile Menu Toggle */}
       <button 
-        className="mobile-menu-toggle" 
+        className="lg:hidden fixed top-5 left-5 z-1001 bg-bg-secondary border border-border rounded-lg p-2.5 cursor-pointer transition-all duration-200 hover:bg-hover-bg text-text-primary" 
         id="mobileMenuToggle"
         onClick={() => setSidebarOpen(!sidebarOpen)}
       >
@@ -26,7 +26,7 @@ export function Layout() {
 
       {/* Sidebar Overlay */}
       <div 
-        className={`sidebar-overlay ${sidebarOpen ? 'active' : ''}`} 
+        className={`fixed inset-0 bg-black/50 z-999 hidden lg:hidden ${sidebarOpen ? 'block' : ''}`} 
         id="sidebarOverlay"
         onClick={() => setSidebarOpen(false)}
       />

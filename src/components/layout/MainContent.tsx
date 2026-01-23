@@ -10,9 +10,9 @@ export function MainContent() {
   const { activeTab, showWelcome } = useUIStore();
 
   return (
-    <main className="main-content">
+    <main className="flex-1 flex flex-col min-w-0 relative lg:ml-70">
       {/* Header (empty now, settings moved to profile) */}
-      <header className="main-header" />
+      <header className="flex justify-end p-4 px-6" />
 
       {/* Welcome Screen - only shown for chat tab when no messages */}
       {activeTab === "chat" && showWelcome && <WelcomeScreen />}

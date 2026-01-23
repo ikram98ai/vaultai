@@ -187,41 +187,40 @@ export function FilesContainer() {
   };
 
   return (
-    <div className="files-container" id="filesContainer">
-      <div className="files-header">
-        <h2>My Knowledgebase</h2>
-        <p className="files-subtitle">Upload and manage your documents for enhanced AI conversations</p>
+    <div className="p-6 flex-1 flex flex-col h-full overflow-y-auto bg-bg-primary" id="filesContainer">
+      <div className="mb-8 text-center max-w-150 mx-auto">
+        <h2 className="text-[32px] font-semibold mb-2 text-brand">My Knowledgebase</h2>
+        <p className="text-text-secondary text-base leading-6">Upload and manage your documents for enhanced AI conversations</p>
       </div>
 
       {/* Upload Area */}
-      <div className="upload-section">
+      <div className="mb-8 max-w-200 mx-auto w-full">
         <div 
-          className={`upload-area ${isDragging ? 'dragging' : ''}`}
+          className={`border-2 border-dashed border-border rounded-xl bg-bg-secondary/30 p-12 text-center transition-all cursor-pointer hover:border-accent ${isDragging ? 'border-accent bg-white/5 scale-[1.02]' : ''}`}
           id="uploadArea"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => document.getElementById('multipleFileInput')?.click()}
-          style={{ cursor: 'pointer' }}
         >
-          <div className="upload-content">
-            <svg viewBox="0 0 24 24" width="48" height="48" className="upload-icon">
+          <div className="flex flex-col items-center gap-4">
+            <svg viewBox="0 0 24 24" width="48" height="48" className="text-text-muted opacity-60">
               <path
                 d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"
                 fill="currentColor"
               />
             </svg>
-            <h3>Drop files here or click to upload</h3>
-            <p>Supports PDF, Word, Excel, PowerPoint, text files, images and more</p>
+            <h3 className="text-2xl font-semibold text-text-primary m-0">Drop files here or click to upload</h3>
+            <p className="text-text-secondary text-sm m-0 max-w-100 leading-5">Supports PDF, Word, Excel, PowerPoint, text files, images and more</p>
             <button 
-              className="upload-btn" 
+              className="mt-4 flex items-center gap-2 px-6 py-3 bg-white text-black border-none rounded-lg text-sm font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px" 
               id="selectFilesBtn"
               onClick={(e) => {
                 e.stopPropagation();
                 document.getElementById('multipleFileInput')?.click();
               }}
             >
-              <svg viewBox="0 0 24 24" width="16" height="16">
+              <svg viewBox="0 0 24 24" width="16" height="16" className="fill-current">
                 <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
               </svg>
               Select Files
@@ -233,50 +232,54 @@ export function FilesContainer() {
           id="multipleFileInput" 
           multiple 
           accept="*" 
-          style={{ display: 'none' }}
+          className="hidden"
           onChange={handleFileSelect}
         />
       </div>
 
       {/* Files List */}
-      <div className="files-list-section">
-        <div className="files-list-header">
-          <h3>Uploaded Files</h3>
-          <div className="files-actions">
-            <button className="refresh-btn" id="refreshFilesBtn" onClick={loadFiles}>
-              <svg viewBox="0 0 24 24" width="16" height="16">
+      <div className="max-w-300 mx-auto w-full">
+        <div className="flex justify-between items-center mb-6 pb-4 border-b border-border">
+          <h3 className="text-xl font-semibold text-text-primary m-0">Uploaded Files</h3>
+          <div className="flex items-center gap-4">
+            <button className="flex items-center gap-1.5 bg-bg-secondary border border-border rounded-md px-3 py-2 text-text-primary text-sm cursor-pointer hover:bg-hover-bg hover:border-accent transition-all" id="refreshFilesBtn" onClick={loadFiles}>
+              <svg viewBox="0 0 24 24" width="16" height="16" className="fill-current">
                 <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
               </svg>
               Refresh
             </button>
-            <span className="files-count" id="filesCount">{files.length + uploadingFiles.length} files</span>
+            <span className="text-text-secondary text-sm" id="filesCount">{files.length + uploadingFiles.length} files</span>
           </div>
         </div>
         
-        <div className="files-grid" id="filesGrid">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-8" id="filesGrid">
           {/* Progress Cards */}
           {uploadingFiles.map((file) => (
-            <div key={file.id} className="file-progress-card">
-              <div className="file-progress-content">
-                <div className="file-progress-header">
-                  <div className="file-progress-icon">
+            <div key={file.id} className="bg-bg-secondary border border-border rounded-lg p-4 relative overflow-hidden">
+              <div>
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-bg-tertiary rounded text-accent-primary shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" width="16" height="16">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                     </svg>
                   </div>
-                  <div className="file-progress-info">
-                    <div className="file-progress-name">{file.name}</div>
-                    <div className="file-progress-meta">{formatFileSize(file.size)}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-text-primary truncate mb-1">{file.name}</div>
+                    <div className="text-xs text-text-muted">{formatFileSize(file.size)}</div>
                   </div>
-                  <div className={`file-progress-status ${file.status}`}>
+                  <div className={`text-xs font-medium px-2 py-0.5 rounded ${
+                    file.status === 'error' ? 'bg-red-900/30 text-red-400' :
+                    file.status === 'ready' ? 'bg-green-900/30 text-green-400' :
+                    'bg-blue-900/30 text-blue-400'
+                  }`}>
                     {getStatusText(file.status)}
                   </div>
                 </div>
-                <div className="file-progress-bar-container">
-                  <div className="file-progress-bar">
-                    <div className="file-progress-fill" style={{ width: `${file.progress}%` }}></div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-1.5 bg-bg-tertiary rounded-full overflow-hidden">
+                    <div className="h-full bg-accent-primary transition-all duration-300" style={{ width: `${file.progress}%` }}></div>
                   </div>
-                  <div className="file-progress-percentage">{Math.round(file.progress)}%</div>
+                  <div className="text-xs font-medium text-text-secondary min-w-7.5 text-right">{Math.round(file.progress)}%</div>
                 </div>
               </div>
             </div>
@@ -284,44 +287,46 @@ export function FilesContainer() {
 
           {/* Regular Files */}
           {isLoading && uploadingFiles.length === 0 ? (
-            <div className="loading-files" id="loadingFiles">
-              <div className="spinner"></div>
-              <p>Loading files...</p>
+            <div className="col-span-full py-12 flex flex-col items-center justify-center text-text-muted rounded-lg" id="loadingFiles">
+              <div className="w-6 h-6 border-2 border-border border-t-accent rounded-full animate-spin mb-3"></div>
+              <p className="text-sm">Loading files...</p>
             </div>
           ) : (files.length === 0 && uploadingFiles.length === 0) ? (
-            <div className="empty-state">
-                <svg viewBox="0 0 24 24" width="48" height="48">
+            <div className="col-span-full py-16 flex flex-col items-center justify-center text-text-muted  rounded-xl text-center px-4">
+                <svg viewBox="0 0 24 24" width="48" height="48" className="mb-4 opacity-50 text-current">
                     <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" fill="currentColor"/>
                 </svg>
-                <h4>No files uploaded yet</h4>
-                <p>Upload your first document to get started with enhanced AI conversations</p>
+                <h4 className="text-lg font-medium text-text-primary mb-2">No files uploaded yet</h4>
+                <p className="text-sm max-w-md">Upload your first document to get started with enhanced AI conversations</p>
             </div>
           ) : (
             files.map((file) => (
-              <div key={file.id} className="file-item" data-filename={file.name}>
-                <div className="kb-file-content">
-                    <div className="vector-icon2">
+              <div key={file.id} className="bg-bg-secondary/30 border border-border rounded-lg p-4 relative group hover:border-accent transition-all duration-200" data-filename={file.name}>
+                <div className="flex items-start gap-3">
+                    <div className="p-2 bg-bg-tertiary rounded text-accent-primary shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" width="16" height="16">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                         </svg>
                     </div>
-                    <div className="kb-file-name">{file.name}</div>
-                    <div className="kb-file-meta">
-                        <span className="date-and-time">{formatDate(file.uploadedAt)}</span>
-                        <span className="date-and-time">• {formatFileSize(file.size)}</span>
+                    <div className="flex-1 min-w-0">
+                         <div className="text-sm font-medium text-text-primary truncate mb-1" title={file.name}>{file.name}</div>
+                        <div className="flex items-center gap-2 text-xs text-text-muted mb-2">
+                            <span>{formatDate(file.uploadedAt)}</span>
+                            <span>• {formatFileSize(file.size)}</span>
+                        </div>
+                        <div className="text-xs">
+                            {file.status === 'ready' ? (
+                                 <span className="text-green-400">Indexed</span>
+                            ) : file.status === 'processing' ? (
+                                 <span className="text-amber-400">Processing</span>
+                            ) : (
+                                <span className="text-red-400">Error</span>
+                            )}
+                        </div>
                     </div>
-                    <div className="kb-file-status">
-                        {file.status === 'ready' ? (
-                             <span style={{ color: '#4ade80' }}>Indexed</span>
-                        ) : file.status === 'processing' ? (
-                             <span style={{ color: '#fbbf24' }}>Processing</span>
-                        ) : (
-                            <span style={{ color: '#f87171' }}>Error</span>
-                        )}
-                    </div>
-                    <div className="file-actions">
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
-                          className="file-delete-btn" 
+                          className="w-6 h-6 flex items-center justify-center bg-transparent border-none text-text-muted hover:bg-hover-bg hover:text-red-400 rounded cursor-pointer transition-colors" 
                           title="Delete file"
                           onClick={() => handleDeleteFile(file.id)}
                         >
