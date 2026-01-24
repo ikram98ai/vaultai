@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Image as ImageIcon, X } from 'lucide-react';
 
 interface GeneratedImage {
   id: string;
@@ -54,9 +55,7 @@ export function ImagesContainer() {
           </div>
         ) : images.length === 0 ? (
           <div className="col-span-full py-16 flex flex-col items-center justify-center text-text-muted text-center px-4">
-            <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor" className="mb-4 opacity-30">
-              <path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-            </svg>
+            <ImageIcon size={48} className="mb-4 opacity-30" />
              <h4 className="text-lg font-bold text-text-primary mb-2">
                No generated images yet. 
               </h4>
@@ -92,7 +91,7 @@ export function ImagesContainer() {
               className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors z-10 border-none cursor-pointer"
               onClick={() => setSelectedImage(null)}
             >
-              ×
+              <X size={20} />
             </button>
             <div className="flex-1 bg-black overflow-hidden flex items-center justify-center min-h-75">
               <img src={selectedImage.url} alt={selectedImage.prompt} className="max-w-full max-h-[70vh] object-contain" />

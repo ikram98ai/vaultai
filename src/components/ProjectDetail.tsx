@@ -6,7 +6,7 @@ import { useUIStore } from "../stores/uiStore";
 import { Message } from "./common/Message";
 import { ModelSelector } from "./common/ModelSelector";
 import type { FileData } from "../types";
-import { deleteFile } from "../services/tauri/commands";
+import { ArrowLeft, FileUp, File, X, Send } from "lucide-react";
 
 export function ProjectDetail() {
   const { 
@@ -15,6 +15,7 @@ export function ProjectDetail() {
     loadProjectFiles, 
     projectFiles, 
     uploadFilesToProject,
+    deleteProjectFile,
     isUploading
   } = useProjectStore();
   const { 
@@ -125,9 +126,8 @@ export function ProjectDetail() {
 
   const handleDeleteFile = async (fileId: string) => {
     try {
-      const success = await deleteFile(fileId);
+      const success = await deleteProjectFile(fileId);
       if (success) {
-        await loadProjectFiles(currentProject.id);
         showNotification('File deleted', 'success');
       }
     } catch (error) {
@@ -170,9 +170,7 @@ export function ProjectDetail() {
           className="flex items-center gap-2 bg-transparent border-none text-text-secondary cursor-pointer hover:text-text-primary transition-colors text-sm font-medium"
           onClick={handleBack}
         >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-          </svg>
+          <ArrowLeft size={20} />
           Back to Projects
         </button>
         <div className="flex-1 text-center ">
@@ -193,18 +191,7 @@ export function ProjectDetail() {
               onDrop={handleDrop}
               onClick={() => document.getElementById('projectFileInput')?.click()}
             >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                strokeWidth="1.5" 
-                stroke="currentColor" 
-                width="32" 
-                height="32"
-                className="mx-auto mb-2 text-text-muted"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-              </svg>
+              <FileUp size={32} className="mx-auto mb-2 text-text-muted" />
               <p className="text-xs text-text-muted m-0 font-medium">Drop files to upload</p>
               <input 
                   type="file" 
@@ -230,9 +217,7 @@ export function ProjectDetail() {
               <div key={file.id} className="bg-bg-primary border border-border rounded-lg p-3 group relative hover:border-accent transition-colors">
                 <div className="flex items-start gap-3">
                     <div className="text-accent-primary shrink-0 mt-0.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" width="16" height="16">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                        </svg>
+                        <File size={16} />
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium text-text-primary truncate mb-1" title={file.name}>{file.name}</div>
@@ -249,9 +234,7 @@ export function ProjectDetail() {
                           handleDeleteFile(file.id);
                       }}
                     >
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M18 6L6 18M6 6l12 12" />
-                        </svg>
+                        <X size={14} />
                     </button>
                 </div>
               </div>
@@ -305,9 +288,7 @@ export function ProjectDetail() {
                             onClick={handleSendMessage}
                             disabled={isSending}
                         >
-                             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                            </svg>
+                             <Send size={16} />
                         </button>
                     </div>
                 </div>

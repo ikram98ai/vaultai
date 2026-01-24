@@ -4,6 +4,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { Message as MessageType } from '../../types';
 import { useChatStore } from '../../stores/chatStore';
+import { MoreHorizontal, Trash2, Check, Copy, FileText, ThumbsUp, ThumbsDown, RotateCw } from 'lucide-react';
 
 interface MessageProps {
   message: MessageType;
@@ -44,11 +45,7 @@ export function Message({ message }: MessageProps) {
             title="More options"
             onClick={() => setShowActions(!showActions)}
         >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="3" cy="8" r="1.5" fill="currentColor"/>
-                <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
-                <circle cx="13" cy="8" r="1.5" fill="currentColor"/>
-            </svg>
+            <MoreHorizontal size={16} />
         </button>
         {showActions && (
             <div className="absolute top-full right-0 bg-bg-secondary border border-white/10 rounded-lg shadow-lg min-w-40 z-1000 mt-1 animate-fadeIn">
@@ -61,9 +58,7 @@ export function Message({ message }: MessageProps) {
                         setShowActions(false); 
                     }}
                 >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-70">
-                        <path d="M4 5L4 13C4 13.5523 4.44772 14 5 14H11C11.5523 14 12 13.5523 12 13V5M2 5H14M6 5V3C6 2.44772 6.44772 2 7 2H9C9.55228 2 10 2.44772 10 3V5" stroke="currentColor" strokeWidth="1.5"/>
-                    </svg>
+                    <Trash2 size={16} className="opacity-70" />
                     Delete Message
                 </button>
             </div>
@@ -81,14 +76,9 @@ export function Message({ message }: MessageProps) {
              onClick={handleCopy}
            >
              {copied ? (
-               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                 <path d="M5 8L7 10L11 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-               </svg>
+               <Check size={16} />
              ) : (
-               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                   <path d="M10.5 2H4.5C3.67157 2 3 2.67157 3 3.5V10.5C3 11.3284 3.67157 12 4.5 12H10.5C11.3284 12 12 11.3284 12 10.5V3.5C12 2.67157 11.3284 2 10.5 2Z" stroke="currentColor" strokeWidth="1.5"/>
-                   <path d="M5 12V13.5C5 14.3284 5.67157 15 6.5 15H12.5C13.3284 15 14 14.3284 14 13.5V6.5C14 5.67157 13.3284 5 12.5 5H12" stroke="currentColor" strokeWidth="1.5"/>
-               </svg>
+               <Copy size={16} />
              )}
            </button>
            <ActionMenu />
@@ -98,9 +88,7 @@ export function Message({ message }: MessageProps) {
           {message.promptRef && (
             <div className="mt-2 text-xs">
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-white/5 border border-white/10 rounded text-text-muted">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2z" />
-                    </svg>
+                    <FileText size={12} />
                     {message.promptRef.title || 'Untitled Prompt'}
                 </span>
             </div>
@@ -160,14 +148,9 @@ export function Message({ message }: MessageProps) {
              onClick={handleCopy}
            >
              {copied ? (
-               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                 <path d="M5 8L7 10L11 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-               </svg>
+               <Check size={16} />
              ) : (
-               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                   <path d="M10.5 2H4.5C3.67157 2 3 2.67157 3 3.5V10.5C3 11.3284 3.67157 12 4.5 12H10.5C11.3284 12 12 11.3284 12 10.5V3.5C12 2.67157 11.3284 2 10.5 2Z" stroke="currentColor" strokeWidth="1.5"/>
-                   <path d="M5 12V13.5C5 14.3284 5.67157 15 6.5 15H12.5C13.3284 15 14 14.3284 14 13.5V6.5C14 5.67157 13.3284 5 12.5 5H12" stroke="currentColor" strokeWidth="1.5"/>
-               </svg>
+               <Copy size={16} />
              )}
            </button>
            <ActionMenu />
@@ -181,20 +164,13 @@ export function Message({ message }: MessageProps) {
         
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
             <button className="p-1 bg-transparent border-none text-text-muted cursor-pointer rounded hover:bg-white/5 hover:text-text-primary" title="Good response">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M7 22V11m0 0L4 11a2 2 0 00-2 2v6a2 2 0 002 2h3m0-10l3.5-7a2 2 0 012-1h.5a1.5 1.5 0 011.5 1.5V8h5a2 2 0 012 2v1a2 2 0 01-.3 1l-3.5 7a2 2 0 01-1.8 1H7"/>
-                </svg>
+                <ThumbsUp size={14} />
             </button>
             <button className="p-1 bg-transparent border-none text-text-muted cursor-pointer rounded hover:bg-white/5 hover:text-text-primary" title="Poor response">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M17 2v11m0 0l3 0a2 2 0 012 2v-6a2 2 0 00-2-2h-3m0 10l-3.5 7a2 2 0 01-2 1h-.5a1.5 1.5 0 01-1.5-1.5V16h-5a2 2 0 01-2-2v-1a2 2 0 01.3-1l3.5-7a2 2 0 011.8-1H17"/>
-                </svg>
+                <ThumbsDown size={14} />
             </button>
             <button className="p-1 bg-transparent border-none text-text-muted cursor-pointer rounded hover:bg-white/5 hover:text-text-primary" title="Regenerate response">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 4v6h6M23 20v-6h-6"/>
-                    <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/>
-                </svg>
+                <RotateCw size={14} />
             </button>
         </div>
       </div>

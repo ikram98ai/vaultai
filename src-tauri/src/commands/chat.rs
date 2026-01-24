@@ -46,7 +46,7 @@ fn build_project_context(project_slugs: &Option<Vec<String>>) -> String {
 #[tauri::command]
 pub fn send_query(
     message: String,
-    history: Vec<types::ChatMessage>,
+    _history: Vec<types::ChatMessage>,
     model: String,
     options: types::QueryOptions,
 ) -> types::QueryResponse {

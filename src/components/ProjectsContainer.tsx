@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useProjectStore } from "../stores/projectStore";
 import { ProjectDetail } from "./ProjectDetail";
-import { updateProject } from "../services/tauri/commands";
+import { Dropdown } from "./common/Dropdown";
+import { Plus, Folder, MoreVertical, Pencil, Trash2, MessageSquare, File } from "lucide-react";
 
 export function ProjectsContainer() {
   const {
@@ -10,6 +11,7 @@ export function ProjectsContainer() {
     loadProjects,
     createProject,
     deleteProject,
+    updateProject,
     currentProject,
     setCurrentProject,
   } = useProjectStore();
@@ -20,24 +22,10 @@ export function ProjectsContainer() {
   const [activeProjectMenu, setActiveProjectMenu] = useState<string | null>(
     null,
   );
-  const projectMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadProjects();
   }, []);
-
-  // Close project menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (projectMenuRef.current && !projectMenuRef.current.contains(event.target as Node)) {
-        setActiveProjectMenu(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [projectMenuRef]);
 
   const validateForm = () => {
     const name = newProjectName.trim();
@@ -119,9 +107,7 @@ export function ProjectsContainer() {
               id="createProjectBtn"
               onClick={() => setShowCreateModal(true)}
             >
-              <svg viewBox="0 0 24 24" width="16" height="16" className="fill-current">
-                <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
-              </svg>
+              <Plus size={16} />
               New Project
             </button>
           </div>
@@ -134,15 +120,7 @@ export function ProjectsContainer() {
               </div>
             ) : projects.length === 0 ? (
               <div className="col-span-full py-16 flex flex-col items-center justify-center text-text-muted text-center px-4">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="48"
-                  height="48"
-                  fill="currentColor"
-                  className="mb-4 opacity-30"
-                >
-                  <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z" />
-                </svg>
+                <Folder size={48} className="mb-4 opacity-30" />
                 <h4 className="text-lg font-bold text-text-primary mb-2">No projects yet.</h4>
                 <p className="text-sm max-w-md">Create your first project to get started!</p>
               </div>
@@ -156,91 +134,54 @@ export function ProjectsContainer() {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-[18px] font-semibold text-text-primary m-0 flex-1 mr-2 truncate">{project.name}</h3>
-                    <button
-                      className="flex items-center justify-center w-7 h-7 bg-transparent border-none rounded-md cursor-pointer text-text-secondary opacity-0 transition-all hover:bg-hover-bg hover:text-text-primary group-hover:opacity-100 shrink-0"
-                      title="Project options"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveProjectMenu(
-                          activeProjectMenu === project.id ? null : project.id,
-                        );
-                      }}
+                    <Dropdown
+                      isOpen={activeProjectMenu === project.id}
+                      onOpenChange={(open) => setActiveProjectMenu(open ? project.id : null)}
+                      menuClassName="min-w-40 z-1000 p-1"
+                      trigger={
+                        <button
+                          className="flex items-center justify-center w-7 h-7 bg-transparent border-none rounded-md cursor-pointer text-text-secondary opacity-0 transition-all hover:bg-hover-bg hover:text-text-primary group-hover:opacity-100 shrink-0"
+                          title="Project options"
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+                      }
                     >
-                      <svg viewBox="0 0 24 24" width="16" height="16" className="fill-current">
-                        <path
-                          d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"
-                        />
-                      </svg>
-                    </button>
-                    {activeProjectMenu === project.id && (
-                      <div 
-                        ref={projectMenuRef}
-                        className="absolute top-10 right-4 bg-bg-secondary border border-border rounded-lg p-1 shadow-lg min-w-40 z-1000"
+                      <button
+                        className="w-full px-3 py-2 bg-transparent border-none text-text-primary cursor-pointer rounded text-left text-[13px] transition-colors hover:bg-hover-bg flex items-center gap-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRenameProject(project);
+                          setActiveProjectMenu(null);
+                        }}
                       >
-                        <button
-                          className="w-full px-3 py-2 bg-transparent border-none text-text-primary cursor-pointer rounded text-left text-[13px] transition-colors hover:bg-hover-bg flex items-center gap-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRenameProject(project);
-                            setActiveProjectMenu(null);
-                          }}
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                          Rename
-                        </button>
-                        <button
-                          className="w-full px-3 py-2 bg-transparent border-none text-[#ff6b6b] cursor-pointer rounded text-left text-[13px] transition-colors hover:bg-hover-bg flex items-center gap-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteProject(project.id);
-                            setActiveProjectMenu(null);
-                          }}
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                          </svg>
-                          Delete
-                        </button>
-                      </div>
-                    )}
+                        <Pencil size={14} />
+                        Rename
+                      </button>
+                      <button
+                        className="w-full px-3 py-2 bg-transparent border-none text-[#ff6b6b] cursor-pointer rounded text-left text-[13px] transition-colors hover:bg-hover-bg flex items-center gap-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteProject(project.id);
+                          setActiveProjectMenu(null);
+                        }}
+                      >
+                        <Trash2 size={14} />
+                        Delete
+                      </button>
+                    </Dropdown>
                   </div>
                   <p className="text-[14px] text-text-secondary m-0 mb-4 line-clamp-2 min-h-[1.5em]">{project.description || "No description"}</p>
                   <div className="flex gap-4 mt-auto pt-4 border-t border-border/50">
                     <div className="flex items-center gap-1.5 text-[12px] text-text-tertiary">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path
-                          d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-                        />
-                      </svg>
+                      <MessageSquare size={14} />
                       <div className="flex items-center gap-1">
                         <span>{project.chats ? project.chats.length : 0}</span>
                         <span>chat{project.chats?.length !== 1 ? "s" : ""}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 text-[12px] text-text-tertiary">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path
-                          d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"
-                        />
-                      </svg>
+                      <File size={14} />
                       <div className="flex items-center gap-1">
                         <span>{project.files ? project.files.length : 0}</span>
                         <span>file{project.files?.length !== 1 ? "s" : ""}</span>

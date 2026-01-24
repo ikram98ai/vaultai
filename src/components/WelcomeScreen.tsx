@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useAppStore } from "../stores/appStore";
 import { ChatInput } from "./common/ChatInput";
+import { Image as ImageIcon, Search, Newspaper } from "lucide-react";
 
 const TAGLINES = [
   "Private. Personal. Unlimited. Uncensored. Unmonitored. Off-Grid.",
@@ -89,27 +90,21 @@ export function WelcomeScreen() {
             className="flex items-center gap-2 px-3.5 py-2 bg-transparent border border-border rounded-[20px] text-text-secondary text-[13px] font-inherit cursor-pointer transition-all duration-200 hover:bg-bg-input hover:border-accent hover:text-text-primary"
             onClick={() => handleQuickAction("images")}
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" className="fill-current">
-              <path d="M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z" />
-            </svg>
+            <ImageIcon size={16} />
             Create Images
           </button>
           <button
             className="flex items-center gap-2 px-3.5 py-2 bg-transparent border border-border rounded-[20px] text-text-secondary text-[13px] font-inherit cursor-pointer transition-all duration-200 hover:bg-bg-input hover:border-accent hover:text-text-primary"
             onClick={() => handleQuickAction("research")}
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" className="fill-current">
-              <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z" />
-            </svg>
+            <Search size={16} />
             Research
           </button>
           <button
             className="flex items-center gap-2 px-3.5 py-2 bg-transparent border border-border rounded-[20px] text-text-secondary text-[13px] font-inherit cursor-pointer transition-all duration-200 hover:bg-bg-input hover:border-accent hover:text-text-primary"
             onClick={() => handleQuickAction("news")}
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" className="fill-current">
-              <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z" />
-            </svg>
+            <Newspaper size={16} />
             Latest News
           </button>
         </div>

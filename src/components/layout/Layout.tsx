@@ -2,6 +2,7 @@ import { Sidebar } from './Sidebar';
 import { MainContent } from './MainContent';
 import { ProfileModal } from '../modals/ProfileModal';
 import { useUIStore } from '../../stores/uiStore';
+import { Menu } from 'lucide-react';
 
 export function Layout() {
   const { 
@@ -19,9 +20,7 @@ export function Layout() {
         id="mobileMenuToggle"
         onClick={() => setSidebarOpen(!sidebarOpen)}
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 6h18M3 18h18" />
-        </svg>
+        <Menu size={24} />
       </button>
 
       {/* Sidebar Overlay */}

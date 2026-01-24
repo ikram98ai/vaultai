@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Settings } from '../types';
+import type { Settings, UserProfile } from '../types';
 import * as commands from '../services/tauri/commands';
 
 interface AppState {
@@ -25,6 +25,10 @@ interface AppState {
   settings: Settings | null;
   isLoadingSettings: boolean;
   
+  // Profile
+  userProfile: UserProfile | null;
+  isLoadingProfile: boolean;
+
   // Actions
   setTheme: (theme: 'dark' | 'light' | 'system') => void;
   setCurrentModel: (model: string) => void;
@@ -39,6 +43,9 @@ interface AppState {
   loadSettings: () => Promise<void>;
   saveSettings: () => Promise<void>;
   detectSystemTier: () => Promise<void>;
+  loadProfile: () => Promise<void>;
+  saveProfile: (profile: UserProfile) => Promise<void>;
+  clearProfile: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -62,6 +69,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   })(),
   settings: null,
   isLoadingSettings: false,
+  userProfile: null,
+  isLoadingProfile: false,
 
   // Actions
   setTheme: (theme) => set({ theme }),
@@ -153,6 +162,36 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (error) {
       console.warn('Could not detect system tier:', error);
       set({ systemTier: 'lite', currentModel: 'vaultai16-code' });
+    }
+  },
+
+  loadProfile: async () => {
+    set({ isLoadingProfile: true });
+    try {
+      const profile = await commands.getUserProfile();
+      set({ userProfile: profile, isLoadingProfile: false });
+    } catch (error) {
+      console.error('Failed to load profile:', error);
+      set({ isLoadingProfile: false });
+    }
+  },
+
+  saveProfile: async (profile: UserProfile) => {
+    try {
+      const savedProfile = await commands.saveUserProfile(profile);
+      set({ userProfile: savedProfile });
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+    }
+  },
+
+  clearProfile: async () => {
+    try {
+      const emptyProfile: UserProfile = { name: '', email: '' };
+      await commands.saveUserProfile(emptyProfile);
+      set({ userProfile: emptyProfile });
+    } catch (error) {
+      console.error('Failed to clear profile:', error);
     }
   },
 }));

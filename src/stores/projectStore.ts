@@ -30,6 +30,7 @@ interface ProjectState {
   // Project files
   loadProjectFiles: (projectId: string) => Promise<void>;
   uploadFilesToProject: (projectId: string, files: FileData[]) => Promise<void>;
+  deleteProjectFile: (fileId: string) => Promise<boolean>;
 }
 
 export const useProjectStore = create<ProjectState>((set) => ({
@@ -137,6 +138,21 @@ export const useProjectStore = create<ProjectState>((set) => ({
     } catch (error) {
       console.error('Failed to upload files:', error);
       set({ isUploading: false, uploadProgress: 0 });
+    }
+  },
+
+  deleteProjectFile: async (fileId: string) => {
+    try {
+      const success = await commands.deleteFile(fileId);
+      if (success) {
+        set((state) => ({
+          projectFiles: state.projectFiles.filter((f) => f.id !== fileId),
+        }));
+      }
+      return success;
+    } catch (error) {
+      console.error('Failed to delete project file:', error);
+      return false;
     }
   },
 }));

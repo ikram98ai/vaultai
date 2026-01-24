@@ -2,12 +2,15 @@ import { useRef, useEffect, useState } from "react";
 import { useChatStore } from "../stores/chatStore";
 import { Message } from "./common/Message";
 import { ChatInput } from "./common/ChatInput";
+import { Dropdown } from "./common/Dropdown";
+import { MoreVertical, Pin, Pencil, Trash2 } from "lucide-react";
+import logoicon from "../assets/vaultai-logo.svg"
+
 
 export function ChatContainer() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { messages, isSending, currentChatId, chatHistory, deleteChat, renameChat, togglePinChat } = useChatStore();
   const [showChatMenu, setShowChatMenu] = useState(false);
-  const chatMenuRef = useRef<HTMLDivElement>(null);
 
   // Get current chat info
   const currentChat = chatHistory.find(c => c.id === currentChatId);
@@ -17,20 +20,6 @@ export function ChatContainer() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  // Close chat menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (chatMenuRef.current && !chatMenuRef.current.contains(event.target as Node)) {
-        setShowChatMenu(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [chatMenuRef]);
-
 
   const handleRename = () => {
     const newTitle = prompt("Rename chat:", chatTitle);
@@ -59,54 +48,41 @@ export function ChatContainer() {
       {/* Chat Header */}
       <div className="flex justify-between items-center px-6 py-3 border-b border-border bg-bg-primary sticky top-0 z-10 shrink-0 h-15">
         <h3 className="m-0 text-base font-semibold text-brand truncate">{chatTitle}</h3>
-        <div className="relative">
-          <button 
-            className="bg-transparent border-none text-text-secondary cursor-pointer p-1.5 rounded-md flex items-center hover:bg-hover-bg hover:text-brand transition-colors" 
-            title="Chat options"
-            onClick={() => setShowChatMenu(!showChatMenu)}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="1" />
-              <circle cx="12" cy="5" r="1" />
-              <circle cx="12" cy="19" r="1" />
-            </svg>
-          </button>
-          
-          {showChatMenu && (
-            <div 
-              ref={chatMenuRef}
-              className="absolute top-full right-0 mt-2 bg-bg-secondary border border-border rounded-lg shadow-lg min-w-40 z-100"
+        <Dropdown
+          isOpen={showChatMenu}
+          onOpenChange={setShowChatMenu}
+          menuClassName="min-w-40 z-100"
+          trigger={
+            <button 
+              className="bg-transparent border-none text-text-secondary cursor-pointer p-1.5 rounded-md flex items-center hover:bg-hover-bg hover:text-brand transition-colors" 
+              title="Chat options"
             >
-              <button 
-                className="flex items-center gap-2.5 w-full px-3.5 py-2.5 bg-transparent border-none text-text-primary text-left cursor-pointer text-sm hover:bg-hover-bg first:rounded-t-lg transition-colors" 
-                onClick={handlePin}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M8.5 1L10.5 3L9.5 8L11 9.5L8 12.5L5 9.5L6.5 8L5.5 3L7.5 1H8.5Z" />
-                </svg>
-                {currentChat?.pinned ? "Unpin Chat" : "Pin Chat"}
-              </button>
-              <button 
-                className="flex items-center gap-2.5 w-full px-3.5 py-2.5 bg-transparent border-none text-text-primary text-left cursor-pointer text-sm hover:bg-hover-bg transition-colors" 
-                onClick={handleRename}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M11.5 2L14 4.5L5.5 13L2 14L3 10.5L11.5 2Z" />
-                </svg>
-                Rename Chat
-              </button>
-              <button 
-                className="flex items-center gap-2.5 w-full px-3.5 py-2.5 bg-transparent border-none text-[#ff6b6b] text-left cursor-pointer text-sm hover:bg-hover-bg last:rounded-b-lg transition-colors" 
-                onClick={handleDelete}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M4 5L4 13C4 13.5523 4.44772 14 5 14H11C11.5523 14 12 13.5523 12 13V5M2 5H14M6 5V3C6 2.44772 6.44772 2 7 2H9C9.55228 2 10 2.44772 10 3V5" />
-                </svg>
-                Delete Chat
-              </button>
-            </div>
-          )}
-        </div>
+              <MoreVertical size={20} />
+            </button>
+          }
+        >
+          <button 
+            className="flex items-center gap-2.5 w-full px-3.5 py-2.5 bg-transparent border-none text-text-primary text-left cursor-pointer text-sm hover:bg-hover-bg first:rounded-t-lg transition-colors" 
+            onClick={handlePin}
+          >
+            <Pin size={16} />
+            {currentChat?.pinned ? "Unpin Chat" : "Pin Chat"}
+          </button>
+          <button 
+            className="flex items-center gap-2.5 w-full px-3.5 py-2.5 bg-transparent border-none text-text-primary text-left cursor-pointer text-sm hover:bg-hover-bg transition-colors" 
+            onClick={handleRename}
+          >
+            <Pencil size={16} />
+            Rename Chat
+          </button>
+          <button 
+            className="flex items-center gap-2.5 w-full px-3.5 py-2.5 bg-transparent border-none text-[#ff6b6b] text-left cursor-pointer text-sm hover:bg-hover-bg last:rounded-b-lg transition-colors" 
+            onClick={handleDelete}
+          >
+            <Trash2 size={16} />
+            Delete Chat
+          </button>
+        </Dropdown>
       </div>
 
       <div className="flex-1 overflow-y-auto w-full flex flex-col relative scroller" id="chatMessages">
@@ -123,19 +99,7 @@ export function ChatContainer() {
           {isSending && (
             <div className="flex justify-start relative w-full">
                <div className="w-8 h-8 rounded-full bg-accent mr-3 mt-1 flex items-center justify-center shrink-0">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 28 31"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="fill-bg-primary"
-                >
-                  <path
-                    d="M12.0009 30.2925C11.7548 30.16 10.3919 29.1757 9.65372 28.5889C4.3284 24.3678 1.48276 19.8564 0.50477 14.0894C0.182979 12.1839 0.0441675 10.2847 0.0189291 7.50845L0 5.67866L0.157741 5.40735C0.384887 5.00984 0.675129 4.87734 1.94967 4.57448C5.12341 3.82363 8.22775 2.46075 11.6665 0.315481C12.1649 0 12.1713 0 12.7076 0H13.2502L13.9443 0.447984C16.0075 1.773 18.3673 2.93397 20.6892 3.76053C21.1751 3.93089 21.6105 4.10756 21.6546 4.14542C21.6988 4.18328 21.7366 4.33471 21.7366 4.47983C21.7366 4.75115 21.7303 4.75746 20.9479 5.43889C20.0709 6.18974 19.9384 6.27176 19.5409 6.27807C18.9036 6.28438 15.7867 4.87103 13.5278 3.55863C13.1177 3.31886 12.7391 3.12326 12.695 3.12326C12.6445 3.12326 12.2091 3.35672 11.7296 3.63434C9.35086 5.02877 6.54308 6.2276 3.91197 6.97844C3.35672 7.13618 2.97814 7.2813 2.8835 7.36964L2.72576 7.50845L2.76992 8.80192C2.97183 15.3261 4.43566 19.3138 8.10786 23.3077C8.70728 23.9639 9.98182 25.1565 10.8147 25.8379C11.5718 26.4689 12.6003 27.226 12.695 27.226C12.8022 27.226 13.7991 26.4752 14.8276 25.6234C15.8182 24.7968 17.5849 23.0238 18.2853 22.1468C20.4179 19.4967 21.6925 16.5817 22.2414 13.124C22.3928 12.165 22.2856 12.3479 23.7116 10.6002C24.7274 9.35086 24.7463 9.33824 25.005 9.31931C25.2006 9.30669 25.2827 9.32562 25.3079 9.39503C25.3584 9.52122 25.2385 11.3636 25.106 12.4615C24.557 17.2 23.0995 20.7587 20.2981 24.1974C19.5788 25.0744 17.6796 26.9736 16.6511 27.8381C15.8056 28.551 14.468 29.5669 13.7045 30.0906L13.2754 30.3808H12.7265C12.3732 30.3808 12.1145 30.3493 12.0009 30.2925Z"
-                    fill="currentColor"
-                  />
-                </svg>
+                <img src={logoicon} alt="VaultAI Logo" className="h-4 w-4 fill-bg-primary" />
               </div>
               <div className="bg-bg-secondary border border-border rounded-lg p-4 rounded-bl-sm">
                 <div className="flex items-center gap-1 py-1">

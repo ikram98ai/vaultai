@@ -1,14 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '../../stores/appStore';
 import type { UserProfile } from '../../types';
-import * as commands from '../../services/tauri/commands';
 
 interface ProfileModalProps {
   onClose: () => void;
 }
 
 export function ProfileModal({ onClose }: ProfileModalProps) {
-  const { currentModel, setCurrentModel, ragEnabled, setRagEnabled, webSearchEnabled, setWebSearchEnabled } = useAppStore();
+  const { 
+    currentModel, 
+    setCurrentModel, 
+    ragEnabled, 
+    setRagEnabled, 
+    webSearchEnabled, 
+    setWebSearchEnabled,
+    userProfile,
+    loadProfile,
+    saveProfile,
+    clearProfile,
+    isLoadingProfile
+  } = useAppStore();
   
   const [profile, setProfile] = useState<UserProfile & {
     pronouns?: string;
@@ -25,30 +36,21 @@ export function ProfileModal({ onClose }: ProfileModalProps) {
     name: '',
     email: '',
   });
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadProfile();
   }, []);
 
-  const loadProfile = async () => {
-    setIsLoading(true);
-    try {
-      const userProfile = await commands.getUserProfile();
-      if (userProfile) {
-        setProfile(prev => ({ ...prev, ...userProfile }));
-      }
-    } catch (error) {
-      console.error('Failed to load profile:', error);
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    if (userProfile) {
+      setProfile(prev => ({ ...prev, ...userProfile }));
     }
-  };
+  }, [userProfile]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await commands.saveUserProfile(profile);
+      await saveProfile(profile);
       onClose();
     } catch (error) {
       console.error('Failed to save profile:', error);
@@ -57,6 +59,7 @@ export function ProfileModal({ onClose }: ProfileModalProps) {
 
   const handleClearProfile = async () => {
     try {
+      await clearProfile();
       setProfile({ name: '', email: '' });
     } catch (error) {
       console.error('Failed to clear profile:', error);
@@ -76,7 +79,7 @@ export function ProfileModal({ onClose }: ProfileModalProps) {
                 <button className="bg-transparent border-none text-text-muted text-2xl cursor-pointer p-0 leading-none hover:text-text-primary transition-colors" id="closeProfile" onClick={onClose}>×</button>
             </div>
             
-            {isLoading ? (
+            {isLoadingProfile ? (
                 <div className="flex-1 flex flex-col items-center justify-center">
                     <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin mb-3"></div>
                     <p className="text-text-muted">Loading...</p>

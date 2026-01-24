@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import type { Prompt, PromptCategory } from '../types';
-import * as commands from '../services/tauri/commands';
+import { usePromptStore } from '../stores/promptStore';
 import { useUIStore } from '../stores/uiStore';
 import { useChatStore } from '../stores/chatStore';
+import { Search, Plus, MessageSquare, Check, Copy, Trash2, X } from 'lucide-react';
 
 const CATEGORIES: { id: PromptCategory; label: string }[] = [
   { id: 'all', label: 'All' },
@@ -15,9 +16,10 @@ const CATEGORIES: { id: PromptCategory; label: string }[] = [
 ];
 
 export function PromptsContainer() {
+  const { prompts, isLoadingPrompts, loadPrompts, savePrompt, deletePrompt } = usePromptStore();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<PromptCategory>('all');
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
   
   // Modal states
@@ -47,15 +49,6 @@ export function PromptsContainer() {
     loadPrompts();
   }, []);
 
-  const loadPrompts = async () => {
-    try {
-      const dbPrompts = await commands.getAllPrompts();
-      setPrompts(dbPrompts);
-    } catch (error) {
-      console.error('Failed to load prompts from DB:', error);
-    }
-  };
-
   const filteredPrompts = prompts.filter((prompt) => {
     const matchesCategory = activeCategory === 'all' || prompt.category === activeCategory;
     const matchesSearch = 
@@ -82,8 +75,7 @@ export function PromptsContainer() {
     };
 
     try {
-      await commands.savePrompt(newPrompt);
-      setPrompts([newPrompt, ...prompts]);
+      await savePrompt(newPrompt);
       setIsCreateModalOpen(false);
       resetForm();
     } catch (error) {
@@ -95,8 +87,7 @@ export function PromptsContainer() {
     if (!confirm('Are you sure you want to delete this prompt?')) return;
     
     try {
-      await commands.deletePrompt(promptId);
-      setPrompts(prompts.filter(p => p.id !== promptId));
+      await deletePrompt(promptId);
       if (selectedPrompt?.id === promptId) setSelectedPrompt(null);
     } catch (error) {
       console.error('Failed to delete prompt:', error);
@@ -120,10 +111,7 @@ export function PromptsContainer() {
       <div className="mb-6 flex justify-center">
         <div className="relative w-full md:w-2xl">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
+            <Search size={16} />
           </div>
           <input
         type="text"
@@ -156,10 +144,7 @@ export function PromptsContainer() {
             onClick={() => setIsCreateModalOpen(true)}
         >
             <div className="w-9 h-9 rounded-full bg-[#2A2A2A] flex items-center justify-center text-brand transition-colors">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
+                <Plus size={18} />
             </div>
             <div className="flex flex-col gap-2 flex-1">
                 <h3 className="text-[15px] font-semibold text-brand m-0">Add Your Prompt</h3>
@@ -172,6 +157,8 @@ export function PromptsContainer() {
           <div className="col-span-full py-12 text-center text-text-muted">
             <p>No prompts found matching your search.</p>
           </div>
+        ) : isLoadingPrompts ? (
+             <div className="col-span-full py-12 text-center text-text-muted">Loading prompts...</div>
         ) : (
           filteredPrompts.map((prompt) => (
             <div 
@@ -188,9 +175,7 @@ export function PromptsContainer() {
                         onClick={(e) => { e.stopPropagation(); handleUsePrompt(prompt); }} 
                         title="Use Prompt"
                     >
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-                        </svg>
+                        <MessageSquare size={14} />
                     </button>
                     <button 
                         className={`p-1 rounded ${copiedPromptId === prompt.id ? 'bg-green-600 text-white' : 'hover:bg-[#2A2A2A] text-[#666] hover:text-[#aaa]'} transition-colors`} 
@@ -198,14 +183,9 @@ export function PromptsContainer() {
                         title={copiedPromptId === prompt.id ? "Copied!" : "Copy"}
                     >
                         {copiedPromptId === prompt.id ? (
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
+                            <Check size={14} />
                         ) : (
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
-                            </svg>
+                            <Copy size={14} />
                         )}
                     </button>
                     <button 
@@ -213,10 +193,7 @@ export function PromptsContainer() {
                         onClick={(e) => { e.stopPropagation(); handleDeletePrompt(prompt.id); }} 
                         title="Delete"
                     >
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
-                        </svg>
+                        <Trash2 size={14} />
                     </button>
                 </div>
               </div>
@@ -240,7 +217,9 @@ export function PromptsContainer() {
             onClick={(e) => { if (e.target === e.currentTarget) setSelectedPrompt(null); }}
         >
             <div className="bg-[#1c1c1c] w-[90%] max-w-160 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.5)] flex flex-col max-h-[80vh] overflow-hidden animate-scaleIn relative font-sans">
-                <button className="absolute top-4 right-4 bg-transparent border-none text-[#888] hover:text-white text-xl cursor-pointer p-1 transition-all" onClick={() => setSelectedPrompt(null)}>×</button>
+                <button className="absolute top-4 right-4 bg-transparent border-none text-[#888] hover:text-white text-xl cursor-pointer p-1 transition-all flex items-center justify-center" onClick={() => setSelectedPrompt(null)}>
+                  <X size={20} />
+                </button>
                 
                 <div className="p-6 pt-8 pb-0 flex flex-col gap-2">
                     <h2 className="text-[20px] font-semibold text-white m-0 leading-tight">{selectedPrompt.title}</h2>
@@ -287,7 +266,9 @@ export function PromptsContainer() {
             <div className="bg-[#1c1c1c] w-[90%] max-w-125 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.5)] flex flex-col max-h-[90vh] overflow-hidden animate-scaleIn relative font-sans">
                 <div className="p-6 pt-8 pb-4 border-b border-[#333]">
                     <h2 className="text-[20px] font-semibold text-white m-0">Create New Prompt</h2>
-                    <button className="absolute top-4 right-4 bg-transparent border-none text-[#888] hover:text-white text-xl cursor-pointer p-1 transition-all" onClick={() => setIsCreateModalOpen(false)}>×</button>
+                    <button className="absolute top-4 right-4 bg-transparent border-none text-[#888] hover:text-white text-xl cursor-pointer p-1 transition-all flex items-center justify-center" onClick={() => setIsCreateModalOpen(false)}>
+                      <X size={20} />
+                    </button>
                 </div>
                 <div className="p-6 overflow-y-auto">
                     <div className="mb-5">
