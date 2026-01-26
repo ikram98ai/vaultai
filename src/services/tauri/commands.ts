@@ -53,18 +53,18 @@ export const sendQuery = (
 
 // ============ File Commands ============
 
-export const uploadFiles = async (files: FileData[]): Promise<UploadResult> => {
+export const uploadFiles = async (files: FileData[], projectId?: string): Promise<UploadResult> => {
   try {
     const uploadedFiles: FileInfo[] = [];
     
     for (const file of files) {
-      const id = crypto.randomUUID();
-      
-      // Save physical file
-      if (file.data) {
-        await savePhysicalFile(id, file.data);
+      if (await sqlService.isDuplicateFile(file.name, file.size, file.type, projectId)) {
+        console.warn(`Duplicate file detected: ${file.name}, skipping upload.`);
+        continue;
       }
-      
+
+      const id = `${crypto.randomUUID()}-${file.name}`;
+
       const fileInfo: FileInfo = {
         id,
         name: file.name,
@@ -72,9 +72,14 @@ export const uploadFiles = async (files: FileData[]): Promise<UploadResult> => {
         size: file.size,
         uploadedAt: Date.now(),
         status: "ready",
-      
+        projectId: projectId
       };
-      
+
+      // Save physical file
+      if (file.data) {
+        await savePhysicalFile(id, file.data, projectId);
+      }
+
       await sqlService.addFileRecord(fileInfo);
       uploadedFiles.push(fileInfo);
     }
@@ -114,42 +119,6 @@ export const deleteProject = (projectId: string): Promise<boolean> =>
 
 export const getProjectFiles = (projectId: string): Promise<FileInfo[]> => 
   sqlService.getProjectFiles(projectId);
-
-export const uploadProjectFiles = async (
-  projectId: string, 
-  files: FileData[]
-): Promise<UploadResult> => {
-   try {
-    const uploadedFiles: FileInfo[] = [];
-    
-    for (const file of files) {
-      const id = crypto.randomUUID();
-      
-      // Save physical file
-      if (file.data) {
-        await savePhysicalFile(id, file.data, projectId);
-      }
-
-      const fileInfo: FileInfo = {
-        id,
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        uploadedAt: Date.now(),
-        status: "ready",
-        projectId: projectId
-      };
-      
-      await sqlService.addFileRecord(fileInfo);
-      uploadedFiles.push(fileInfo);
-    }
-    
-    return { success: true, files: uploadedFiles };
-  } catch (error) {
-    console.error("Failed to upload project files:", error);
-    return { success: false, error: String(error) };
-  }
-};
 
 // ============ Settings Commands ============
 

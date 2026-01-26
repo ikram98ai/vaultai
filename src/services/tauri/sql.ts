@@ -11,7 +11,7 @@ import type {
   Prompt,
   PromptCategory
 } from '../../types';
-import { deletePhysicalFile } from './fs';
+import { deletePhysicalFile, deleteProjectDirectory } from './fs';
 import { PREMADE_PROMPTS } from '../../data/premadePrompts';
 
 class TauriSqlService {
@@ -240,27 +240,10 @@ class TauriSqlService {
     await this.init();
     if (!this.db) return false;
 
-    // 1. Get files linked to the project
-    const files = await this.getProjectFiles(projectId);
-    
-    // 2. Delete physical files
-    for (const f of files) {
-      try {
-        await deletePhysicalFile(f.id, f.projectId);
-      } catch (e) { 
-        console.warn(`Failed to delete physical file ${f.id}:`, e); 
-      }
-    }
+    // 1. Delete physical files
+    await deleteProjectDirectory(projectId); // Delete entire project directory
 
-    // 3. SQL Cleanup (Cascading)
-    // Delete files records
-    await this.db.execute('DELETE FROM files WHERE project_id = $1', [projectId]);
-    
-    // Delete chats (and their messages via foreign key cascade if supported/enabled, but let's be explicit)
-    // If messages FK has ON DELETE CASCADE (which we defined), deleting chats is enough.
-    await this.db.execute('DELETE FROM chats WHERE project_id = $1', [projectId]);
-    
-    // Delete project
+    // 2. SQL Cleanup (Cascading)
     await this.db.execute('DELETE FROM projects WHERE id = $1', [projectId]);
     
     return true;
@@ -446,6 +429,19 @@ class TauriSqlService {
     }));
   }
 
+  async isDuplicateFile(name:string, size:number, type:string, projectId?:string): Promise<boolean> {
+    await this.init();
+    if (!this.db) return false;
+
+    let files;
+    if (projectId) {
+      files = await this.db.select<any[]>('SELECT * FROM files WHERE name = $1 AND size = $2 AND type = $3 AND project_id = $4', [name, size, type, projectId]);
+    } else {
+      files = await this.db.select<any[]>('SELECT * FROM files WHERE name = $1 AND size = $2 AND type = $3 AND project_id IS NULL', [name, size, type]);
+    }
+    return files.length > 0;
+  }
+
   async getFile(fileId: string): Promise<FileInfo | null> {
     await this.init();
     if (!this.db) return null;
@@ -465,12 +461,7 @@ class TauriSqlService {
     };
   }
 
-  // Note: Actual file content upload is handled by Tauri command 'upload_files',
-  // this service mainly tracks metadata. If we are moving everything to SQL, 
-  // we assume the backend command might still handle the physical write, 
-  // but we might want to store the metadata here.
-  // For now, I'll provide a way to save file metadata.
-  
+  // Note: Actual file content upload is handled by Tauri command 'upload_files',  
   async addFileRecord(file: FileInfo): Promise<void> {
     await this.init();
     if (!this.db) return;

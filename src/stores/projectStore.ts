@@ -124,7 +124,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
   uploadFilesToProject: async (projectId: string, files: FileData[]) => {
     set({ isUploading: true, uploadProgress: 0 });
     try {
-      const result = await commands.uploadProjectFiles(projectId, files);
+      const result = await commands.uploadFiles(files, projectId);
       if (result.success && result.files) {
         set((state) => ({
           projectFiles: [...state.projectFiles, ...result.files!],

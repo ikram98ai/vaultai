@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useProjectStore } from "../stores/projectStore";
+import { useChatStore } from "../stores/chatStore";
 import { ProjectDetail } from "./ProjectDetail";
 import { Dropdown } from "./common/Dropdown";
 import { Plus, Folder, MoreVertical, Pencil, Trash2, MessageSquare, File } from "lucide-react";
@@ -15,6 +16,8 @@ export function ProjectsContainer() {
     currentProject,
     setCurrentProject,
   } = useProjectStore();
+
+  const { clearProjectChats } = useChatStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectDescription, setNewProjectDescription] = useState("");
@@ -83,6 +86,7 @@ export function ProjectsContainer() {
     if (window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
       try {
         await deleteProject(projectId);
+        clearProjectChats(projectId);
       } catch (error) {
         console.error("Failed to delete project:", error);
       }

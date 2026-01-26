@@ -6,7 +6,7 @@ import { writeFile,remove, BaseDirectory, exists, mkdir } from '@tauri-apps/plug
 export async function savePhysicalFile(id: string, base64: string, projectId?: string) {
   try {
     // ensure dir
-    const dir = projectId ? `projects/${projectId}` : 'files';
+    const dir = projectId ? `knowledgebase/project-${projectId}` : 'knowledgebase';
     const dirExists = await exists(dir, { baseDir: BaseDirectory.AppData });
     if (!dirExists) {
       await mkdir(dir, { baseDir: BaseDirectory.AppData, recursive: true });
@@ -28,7 +28,7 @@ export async function savePhysicalFile(id: string, base64: string, projectId?: s
 
 export async function deletePhysicalFile(id: string, projectId?: string) {
   try {
-    const dir = projectId ? `projects/${projectId}` : 'files';
+    const dir = projectId ? `knowledgebase/project-${projectId}` : 'knowledgebase';
     const filePath = `${dir}/${id}`;
     const fileExists = await exists(filePath, { baseDir: BaseDirectory.AppData });
     if (fileExists) {
@@ -37,6 +37,19 @@ export async function deletePhysicalFile(id: string, projectId?: string) {
     }
   } catch (error) {
     console.error('Failed to delete physical file:', error);
+    throw error;
+  }
+}
+
+export async function deleteProjectDirectory(projectId: string) {
+  try {
+    const dir = `knowledgebase/project-${projectId}`;
+    const dirExists = await exists(dir, { baseDir: BaseDirectory.AppData });
+    if (dirExists) {
+      await remove(dir, { baseDir: BaseDirectory.AppData, recursive: true });
+    }
+  } catch (error) {
+    console.error('Failed to delete project directory:', error);
     throw error;
   }
 }

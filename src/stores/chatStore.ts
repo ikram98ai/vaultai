@@ -30,6 +30,7 @@ interface ChatState {
   createNewChat: () => void;
   loadChat: (chatId: string) => Promise<void>;
   deleteChat: (chatId: string) => Promise<void>;
+  clearProjectChats: (projectId: string) => void;
   renameChat: (chatId: string, newTitle: string) => Promise<void>;
   togglePinChat: (chatId: string) => Promise<void>;
   loadChatHistory: () => Promise<void>;
@@ -139,6 +140,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } catch (error) {
       console.error('Failed to delete chat:', error);
     }
+  },
+
+  // Clear all chats for a project (local state sync)
+  clearProjectChats: (projectId: string) => {
+    set((state) => ({
+      chatHistory: state.chatHistory.filter((c) => c.projectId !== projectId),
+      // If current chat belongs to this project, clear it
+      ...(state.currentProjectId === projectId 
+        ? { currentChatId: null, messages: [], currentProjectId: null } 
+        : {}),
+    }));
   },
 
   // Rename a chat

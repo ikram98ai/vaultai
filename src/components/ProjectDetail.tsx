@@ -6,7 +6,7 @@ import { useUIStore } from "../stores/uiStore";
 import { Message } from "./common/Message";
 import { ModelSelector } from "./common/ModelSelector";
 import type { FileData } from "../types";
-import { ArrowLeft, FileUp, File, X, Send } from "lucide-react";
+import { ArrowLeft, FileUp, File, X, Send, Plus } from "lucide-react";
 
 export function ProjectDetail() {
   const { 
@@ -55,8 +55,7 @@ export function ProjectDetail() {
         loadChat(projectChats[0].id);
       } else {
         // Create a new chat for this project
-        setMessages([]);
-        createNewChat();
+        createNewProjectChat();
       }
     }
     
@@ -70,6 +69,11 @@ export function ProjectDetail() {
   }, [messages]);
 
   if (!currentProject) return null;
+
+  const createNewProjectChat = () => {
+    setMessages([]);
+    createNewChat();
+  };
 
   const handleBack = () => {
     clearCurrentProject();
@@ -176,7 +180,13 @@ export function ProjectDetail() {
         <div className="flex-1 text-center ">
             <h2 className="text-lg font-semibold text-brand m-0">{currentProject.name}</h2>
         </div>
-        <div className="w-35"></div>
+        <button
+            className='px-3 py-2.5 bg-transparent border-none rounded-lg cursor-pointer transition-all duration-200 hover:bg-hover-bg hover:text-text-primary'
+            onClick={() => createNewProjectChat()}
+          >
+            <Plus size={16} className="ml-auto text-gray-500 transition-colors duration-200 group-hover:text-gray-400 shrink-0" />
+        </button>
+
       </div>
 
       <div className="flex-1 flex min-h-0">

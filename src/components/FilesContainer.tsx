@@ -105,13 +105,8 @@ export function FilesContainer() {
         for (const file of fileDataList) {
              updateUploadingFile(file.name, { progress: 100, status: 'ready' });
         }
-
-        // Wait a bit before clearing progress cards and refreshing list
-        setTimeout(async () => {
-    
-           const { setUploadingFiles, uploadingFiles } = useFileStore.getState();
-           setUploadingFiles(uploadingFiles.filter(f => !fileDataList.some(fd => fd.name === f.name)));
-        }, 1500);
+        const { setUploadingFiles, uploadingFiles } = useFileStore.getState();
+        setUploadingFiles(uploadingFiles.filter(f => !fileDataList.some(fd => fd.name === f.name)));
       } else {
         console.error('Failed to upload files:', result.error);
         showNotification(result.error || 'Upload failed', 'error');
