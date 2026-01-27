@@ -53,8 +53,7 @@ export function ChatInput({ textareaRef, variant = 'default' }: ChatInputProps) 
     }
     setShowWelcome(false);
     setIsSending(true);
-    // delay to allow UI to update
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+
     // Send message
     await sendMessage(message, currentModel, {
       ragEnabled,

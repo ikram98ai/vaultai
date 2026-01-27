@@ -50,10 +50,13 @@ pub fn send_query(
     model: String,
     options: types::QueryOptions,
 ) -> types::QueryResponse {
+
+    let generation_time = std::time::Instant::now();
+
     let temporal_anchor = build_temporal_anchor();
     let user_profile = build_user_profile_section(options.user_profile_enabled);
     let project_context = build_project_context(&options.project_slugs);
-
+    
 
     let mut enabled_sources = Vec::new();
     if options.rag_enabled {
@@ -105,10 +108,14 @@ pub fn send_query(
         system_prompt_logic
     );
 
+    // Simulate generation time
+    std::thread::sleep(std::time::Duration::from_millis(1500));
+
+    let generation_duration = generation_time.elapsed();
     types::QueryResponse {
         success: true,
         content: Some(response_content),
-        generation_time: Some(0.5),
+        generation_time: Some(generation_duration.as_secs_f64()),
         error: None,
     }
 }

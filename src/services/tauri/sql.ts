@@ -332,32 +332,58 @@ class TauriSqlService {
     }));
   }
 
-  async saveChat(chat: Chat): Promise<Chat> {
+  async createChat(chat: Chat): Promise<Chat> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
 
-    // Upsert chat
-    // SQLite doesn't have a simple UPSERT for all cases, but INSERT OR REPLACE is easy if ID is primary key
     await this.db.execute(
       `INSERT OR REPLACE INTO chats (id, title, timestamp, model, pinned, project_id) 
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [chat.id, chat.title, chat.timestamp, chat.model || null, chat.pinned ? 1 : 0, chat.projectId || null]
     );
+    
+    return chat;
+  }
 
-    // Replace messages
-    // 1. Delete existing messages
-    await this.db.execute('DELETE FROM messages WHERE chat_id = $1', [chat.id]);
+  async addMessage(chatId: string, message: Message): Promise<boolean> {
+    await this.init();
+    if (!this.db) return false;
 
-    // 2. Insert new messages
-    for (const msg of chat.messages) {
+    try {
+      // 1. Insert message
       await this.db.execute(
         `INSERT INTO messages (chat_id, role, content, timestamp, model, generation_time)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [chat.id, msg.role, msg.content, msg.timestamp || Date.now(), msg.model || null, msg.generationTime || null]
+        [chatId, message.role, message.content, message.timestamp || Date.now(), message.model || null, message.generationTime || null]
       );
-    }
 
-    return chat;
+      // 2. Update chat timestamp
+      await this.db.execute(
+        'UPDATE chats SET timestamp = $1 WHERE id = $2',
+        [Date.now(), chatId]
+      );
+
+      return true;
+    } catch (error) {
+      console.error('Failed to add message:', error);
+      return false;
+    }
+  }
+
+  async deleteMessage(chatId: string, timestamp: number): Promise<boolean> {
+    await this.init();
+    if (!this.db) return false;
+
+    try {
+      await this.db.execute(
+        'DELETE FROM messages WHERE chat_id = $1 AND timestamp = $2',
+        [chatId, timestamp]
+      );
+      return true;
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+      return false;
+    }
   }
 
   async deleteChat(chatId: string): Promise<boolean> {

@@ -28,8 +28,14 @@ export const getProjectChats = (projectId: string): Promise<Chat[]> =>
 export const getChat = (chatId: string): Promise<Chat | null> => 
   sqlService.getChat(chatId);
 
-export const saveChat = (chatData: Chat): Promise<Chat> => 
-  sqlService.saveChat(chatData);
+export const createChat = (chatData: Chat): Promise<Chat> => 
+  sqlService.createChat(chatData);
+
+export const addMessage = (chatId: string, message: Message): Promise<boolean> => 
+  sqlService.addMessage(chatId, message);
+
+export const deleteMessage = (chatId: string, timestamp: number): Promise<boolean> => 
+  sqlService.deleteMessage(chatId, timestamp);
 
 export const deleteChat = (chatId: string): Promise<boolean> => 
   sqlService.deleteChat(chatId);

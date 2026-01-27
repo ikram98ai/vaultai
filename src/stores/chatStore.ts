@@ -202,13 +202,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   // Send a message and get AI response
   sendMessage: async (content: string, model: string, options: QueryOptions) => {
-    const { addMessage, currentChatId, currentProjectId, generateChatId } = get();
+    const { addMessage, currentChatId, currentProjectId, generateChatId, chatHistory, messages } = get();
     
     // Create chat ID if needed
     let chatId = currentChatId;
-    if (!chatId) {
-      chatId = generateChatId();
-      set({ currentChatId: chatId });
+    let isNewChat = false;
+    
+    // Check if the current chat exists in history (persisted)
+    const existingChatIndex = chatId ? chatHistory.findIndex(c => c.id === chatId) : -1;
+    
+    if (!chatId || (chatId && existingChatIndex === -1 && messages.length === 0)) {
+      if (!chatId) {
+        chatId = generateChatId();
+        set({ currentChatId: chatId });
+      }
+      isNewChat = true;
+    } else if (existingChatIndex === -1 && messages.length > 0) {
+      // Edge case: has messages but not in history? assume new for persistence
+       isNewChat = true;
     }
     
     // Inject projectId if not provided but exists in store
@@ -224,55 +235,50 @@ export const useChatStore = create<ChatState>((set, get) => ({
     };
     addMessage(userMessage);
     
-    // Helper to save current state
-    const saveState = async () => {
-      const { messages: currentMessages, currentChatId, currentProjectId, chatHistory } = get();
-      if (!currentChatId) return;
+    // Helper to update history
+    const updateHistory = (newMsg: Message) => {
+      set(state => ({
+        chatHistory: state.chatHistory.map(c => 
+          c.id === chatId 
+            ? { ...c, messages: [...c.messages, newMsg], timestamp: Date.now() } 
+            : c
+        )
+      }));
+    };
 
-      // Find existing title or generate new one
-      const existingChat = chatHistory.find(c => c.id === currentChatId);
-      let title = existingChat?.title;
+    // Save/Persist User Message
+    if (isNewChat) {
+      // Determine title
+      const title = content.substring(0, 50) + (content.length > 50 ? '...' : '');
       
-      if (!title) {
-        const firstUserMsg = currentMessages.find(m => m.role === 'user');
-        if (firstUserMsg) {
-          title = firstUserMsg.content.substring(0, 50);
-          if (title.length < firstUserMsg.content.length) title += '...';
-        } else {
-          title = 'New Chat';
-        }
-      }
-
-      const chatData: Chat = {
-        id: currentChatId,
+      const newChat: Chat = {
+        id: chatId!,
         title,
-        messages: currentMessages,
+        messages: get().messages, // Includes the user message
         timestamp: Date.now(),
-        model: model, // Current model
-        pinned: existingChat?.pinned || false,
+        model: model,
+        pinned: false,
         projectId: currentProjectId || undefined
       };
 
       try {
-        const savedChat = await commands.saveChat(chatData);
-        // Update history
-        set(state => {
-          const newHistory = state.chatHistory.some(c => c.id === savedChat.id)
-            ? state.chatHistory.map(c => c.id === savedChat.id ? savedChat : c)
-            : [savedChat, ...state.chatHistory];
-          return { chatHistory: newHistory };
-        });
+        const savedChat = await commands.createChat(newChat);
+        set(state => ({
+          chatHistory: [savedChat, ...state.chatHistory]
+        }));
       } catch (e) {
-        console.error('Failed to save chat:', e);
+        console.error('Failed to create new chat:', e);
       }
-    };
-
-    // Save after user message (optimistic)
-    await saveState();
+    } 
     
-    // Set sending state
-    set({ isSending: true, generationStartTime: Date.now() });
+    try {
+      await commands.addMessage(chatId!, userMessage);
+      updateHistory(userMessage);
+    } catch (e) {
+      console.error('Failed to add user message:', e);
+    }
     
+        
     try {
       // Prepare history for RAG
       const history = get().messages.slice(0, -1).map<Message>(msg => ({
@@ -286,24 +292,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
       });
       
       if (response.success && response.content) {
-        const { generationStartTime } = get();
-        const generationTime = generationStartTime 
-          ? (Date.now() - generationStartTime) / 1000 
-          : undefined;
         
         const assistantMessage: Message = {
           role: 'assistant',
           content: response.content,
           timestamp: Date.now(),
           model,
-          generationTime,
-          memoryData: response.memoryData,
+          generationTime: response.generationTime,
           sources: response.sources,
         };
         addMessage(assistantMessage);
         
-        // Save after assistant message
-        await saveState();
+        // Persist assistant message
+        await commands.addMessage(chatId!, assistantMessage);
+        updateHistory(assistantMessage);
+
       } else {
         // Add error message
         const errorMessage: Message = {
@@ -312,8 +315,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
           timestamp: Date.now(),
         };
         addMessage(errorMessage);
-        // No save on error? Or save error message? Let's save it.
-        await saveState();
+        // Persist error message.
+        await commands.addMessage(chatId!, errorMessage);
+        updateHistory(errorMessage);
       }
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -323,36 +327,31 @@ export const useChatStore = create<ChatState>((set, get) => ({
         timestamp: Date.now(),
       };
       addMessage(errorMessage);
-      await saveState();
-    } finally {
-      set({ isSending: false, generationStartTime: null });
-    }
+      await commands.addMessage(chatId!, errorMessage);
+      updateHistory(errorMessage);
+    } 
   },
 
   deleteMessage: async (messageTimestamp: number) => {
-    const { messages, currentChatId, chatHistory } = get();
+    const { messages, currentChatId } = get();
     if (!currentChatId) return;
 
     const newMessages = messages.filter(m => m.timestamp !== messageTimestamp);
     set({ messages: newMessages });
 
-    // Find current chat to maintain other properties
-    const existingChat = chatHistory.find(c => c.id === currentChatId);
-    if (!existingChat) return;
-
-    const updatedChat: Chat = {
-      ...existingChat,
-      messages: newMessages,
-      timestamp: Date.now()
-    };
-
     try {
-      await commands.saveChat(updatedChat);
+      await commands.deleteMessage(currentChatId, messageTimestamp);
+      
+      // Update history
       set(state => ({
-        chatHistory: state.chatHistory.map(c => c.id === currentChatId ? updatedChat : c)
+        chatHistory: state.chatHistory.map(c => 
+          c.id === currentChatId 
+            ? { ...c, messages: newMessages } 
+            : c
+        )
       }));
     } catch (e) {
-      console.error('Failed to save chat after message deletion:', e);
+      console.error('Failed to delete message:', e);
     }
   },
 }));

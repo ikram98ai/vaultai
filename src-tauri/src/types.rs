@@ -19,6 +19,7 @@ pub struct ChatMessage {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct QueryResponse {
     pub success: bool,
     pub content: Option<String>,

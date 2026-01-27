@@ -176,7 +176,6 @@ export interface QueryResponse {
   success: boolean;
   content?: string;
   generationTime?: number;
-  memoryData?: MemoryData;
   sources?: Source[];
   error?: string;
 }
