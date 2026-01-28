@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { sqlService } from "./sql";
-import { savePhysicalFile } from "./fs";
+import { savePhysicalFile, saveGeneratedImageFile, deleteGeneratedImageFile, deletePhysicalFile, deleteProjectDirectory } from "./fs";
 import type {
   Chat,
   Project,
@@ -13,7 +13,8 @@ import type {
   QueryResponse,
   UserProfile,
   Prompt,
-  Message
+  Message,
+  GeneratedImage
 } from "../../types";
 
 
@@ -100,9 +101,12 @@ export const uploadFiles = async (files: FileData[], projectId?: string): Promis
 export const getFiles = (): Promise<FileInfo[]> => 
   sqlService.getFiles();
 
-export const deleteFile = (fileId: string): Promise<boolean> => 
-  sqlService.deleteFile(fileId);
+export const deleteFile = async (fileId: string, projectId?: string): Promise<boolean> => {
 
+  await deletePhysicalFile(fileId, projectId);  
+  
+  return sqlService.deleteFile(fileId);
+}
 // ============ Project Commands ============
 
 export const createProject = (projectData: ProjectData): Promise<Project> => 
@@ -120,8 +124,12 @@ export const updateProject = (
 ): Promise<Project | null> => 
   sqlService.updateProject(projectId, updates);
 
-export const deleteProject = (projectId: string): Promise<boolean> => 
-  sqlService.deleteProject(projectId);
+export const deleteProject = async (projectId: string): Promise<boolean> => {
+    // 1. Delete physical files
+    await deleteProjectDirectory(projectId); // Delete entire project directory
+    // 2. SQL Cleanup (Cascading)
+    return sqlService.deleteProject(projectId);
+}
 
 export const getProjectFiles = (projectId: string): Promise<FileInfo[]> => 
   sqlService.getProjectFiles(projectId);
@@ -168,3 +176,18 @@ export const savePrompt = (prompt: Prompt): Promise<Prompt> =>
 
 export const deletePrompt = (promptId: string): Promise<boolean> => 
   sqlService.deletePrompt(promptId);
+
+// ============ Image Commands ============
+
+export const getAllGeneratedImages = (): Promise<GeneratedImage[]> => 
+  sqlService.getAllGeneratedImages();
+
+export const saveGeneratedImage = async (image: GeneratedImage, base64: string): Promise<void> => {
+  await saveGeneratedImageFile(image.id, base64);
+  return sqlService.saveGeneratedImage(image);
+};
+
+export const deleteGeneratedImage = async (id: string): Promise<boolean> => {
+  await deleteGeneratedImageFile(id);
+  return sqlService.deleteGeneratedImage(id);
+};

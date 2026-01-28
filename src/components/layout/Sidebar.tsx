@@ -40,11 +40,18 @@ export function Sidebar() {
     sidebarOpen,
     openProfileModal,
     setShowWelcome,
+    openSearchModal,
+    setSearchQuery,
   } = useUIStore();
   const { clearCurrentProject, currentProject } = useProjectStore();
 
+  const handleSearchClick = () => {
+    openSearchModal();
+  };
+
   const handleNavClick = (tab: Tab) => {
     setActiveTab(tab);
+    setSearchQuery('');
 
     if (tab === "chat") {
       clearCurrentProject();
@@ -75,6 +82,7 @@ export function Sidebar() {
     createNewChat();
 
     setActiveTab("chat");
+    setSearchQuery('');
 
     setShowWelcome(true);
   };
@@ -98,7 +106,6 @@ export function Sidebar() {
   };
 
   // Group chats by date (Today, Yesterday, Previous 7 Days, etc.)
-
   const groupChatsByDate = () => {
     const now = new Date();
 
@@ -124,7 +131,7 @@ export function Sidebar() {
       Older: [],
     };
 
-    const chatsToShow = currentProject
+    let chatsToShow = currentProject
       ? chatHistory.filter((c) => c.projectId === currentProject.id)
       : chatHistory;
 
@@ -174,7 +181,9 @@ export function Sidebar() {
             <input
               type="text"
               placeholder="Search ⌘K"
-              className="w-full bg-[#1A1B1E] border border-transparent rounded-lg py-2 px-3 pl-9 text-text-primary text-sm outline-none transition-all duration-200 focus:border-accent focus:bg-bg-tertiary placeholder:text-text-muted"
+              className="w-full bg-[#1A1B1E] border border-transparent rounded-lg py-2 px-3 pl-9 text-text-primary text-sm outline-none transition-all duration-200 focus:border-accent focus:bg-bg-tertiary placeholder:text-text-muted cursor-pointer"
+              readOnly
+              onClick={handleSearchClick}
             />
           </div>
         </div>

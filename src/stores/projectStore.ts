@@ -30,7 +30,7 @@ interface ProjectState {
   // Project files
   loadProjectFiles: (projectId: string) => Promise<void>;
   uploadFilesToProject: (projectId: string, files: FileData[]) => Promise<void>;
-  deleteProjectFile: (fileId: string) => Promise<boolean>;
+  deleteProjectFile: (fileId: string, projectId: string) => Promise<boolean>;
 }
 
 export const useProjectStore = create<ProjectState>((set) => ({
@@ -141,9 +141,9 @@ export const useProjectStore = create<ProjectState>((set) => ({
     }
   },
 
-  deleteProjectFile: async (fileId: string) => {
+  deleteProjectFile: async (fileId: string, projectId: string) => {
     try {
-      const success = await commands.deleteFile(fileId);
+      const success = await commands.deleteFile(fileId, projectId);
       if (success) {
         set((state) => ({
           projectFiles: state.projectFiles.filter((f) => f.id !== fileId),

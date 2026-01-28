@@ -21,18 +21,7 @@ export function ProfileModal({ onClose }: ProfileModalProps) {
     isLoadingProfile
   } = useAppStore();
   
-  const [profile, setProfile] = useState<UserProfile & {
-    pronouns?: string;
-    dob?: string;
-    location?: string;
-    occupation?: string;
-    employer?: string;
-    aliases?: string;
-    interests?: string;
-    communicationStyle?: string;
-    relationships?: string;
-    notes?: string;
-  }>({
+  const [profile, setProfile] = useState<UserProfile>({
     name: '',
     email: '',
   });

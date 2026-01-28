@@ -128,9 +128,9 @@ export function ProjectDetail() {
     showNotification(`Uploaded ${files.length} files to project`, 'success');
   };
 
-  const handleDeleteFile = async (fileId: string) => {
+  const handleDeleteFile = async (fileId: string, projectId: string) => {
     try {
-      const success = await deleteProjectFile(fileId);
+      const success = await deleteProjectFile(fileId, projectId);
       if (success) {
         showNotification('File deleted', 'success');
       }
@@ -241,7 +241,7 @@ export function ProjectDetail() {
                       title="Delete file"
                       onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteFile(file.id);
+                          handleDeleteFile(file.id, currentProject?.id);
                       }}
                     >
                         <X size={14} />

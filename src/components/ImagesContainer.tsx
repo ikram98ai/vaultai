@@ -1,34 +1,24 @@
 import { useState, useEffect } from 'react';
-import { Image as ImageIcon, X } from 'lucide-react';
-
-interface GeneratedImage {
-  id: string;
-  prompt: string;
-  url: string;
-  model: string;
-  createdAt: number;
-}
+import { Image as ImageIcon, X, Trash2 } from 'lucide-react';
+import { useImageStore } from '../stores/imageStore';
+import type { GeneratedImage } from '../types';
 
 export function ImagesContainer() {
-  const [images, setImages] = useState<GeneratedImage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { images, isLoadingImages, loadImages, deleteImage } = useImageStore();
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
 
   useEffect(() => {
     loadImages();
   }, []);
 
-  const loadImages = async () => {
-    setIsLoading(true);
-    try {
-      // TODO: Replace with Tauri command
-      // const images = await commands.getGeneratedImages();
-      // setImages(images);
-      setImages([]);
-    } catch (error) {
-      console.error('Failed to load images:', error);
-    } finally {
-      setIsLoading(false);
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (confirm('Are you sure you want to delete this image?')) {
+      await deleteImage(id);
+      if (selectedImage?.id === id) {
+        setSelectedImage(null);
+      }
     }
   };
 
@@ -48,7 +38,7 @@ export function ImagesContainer() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8" id="imagesGrid">
-        {isLoading ? (
+        {isLoadingImages ? (
           <div className="col-span-full py-12 flex flex-col items-center justify-center text-text-muted">
             <div className="w-6 h-6 border-2 border-border border-t-accent rounded-full animate-spin mb-3"></div>
             <p className="text-sm">Loading images...</p>
@@ -57,7 +47,7 @@ export function ImagesContainer() {
           <div className="col-span-full py-16 flex flex-col items-center justify-center text-text-muted text-center px-4">
             <ImageIcon size={48} className="mb-4 opacity-30" />
              <h4 className="text-lg font-bold text-text-primary mb-2">
-               No generated images yet. 
+               No generated images yet
               </h4>
             <p className="text-sm max-w-md">Use an image model to create your first image!</p>
           </div>
@@ -65,9 +55,16 @@ export function ImagesContainer() {
           images.map((image) => (
             <div 
               key={image.id} 
-              className="bg-bg-secondary rounded-lg overflow-hidden cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg group border border-transparent hover:border-accent"
+              className="bg-bg-secondary rounded-lg overflow-hidden cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg group border border-transparent hover:border-accent relative"
               onClick={() => setSelectedImage(image)}
             >
+              <button 
+                className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center bg-black/50 text-white rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/80 transition-all z-10 border-none cursor-pointer"
+                onClick={(e) => handleDelete(e, image.id)}
+                title="Delete image"
+              >
+                <Trash2 size={16} />
+              </button>
               <div className="aspect-square bg-bg-tertiary overflow-hidden">
                 <img src={image.url} alt={image.prompt} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
               </div>

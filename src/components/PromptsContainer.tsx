@@ -17,8 +17,9 @@ const CATEGORIES: { id: PromptCategory; label: string }[] = [
 
 export function PromptsContainer() {
   const { prompts, isLoadingPrompts, loadPrompts, savePrompt, deletePrompt } = usePromptStore();
+  const { setActiveTab, searchQuery, setSearchQuery } = useUIStore();
+  const { setPendingPrompt } = useChatStore();
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<PromptCategory>('all');
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
   
@@ -42,8 +43,6 @@ export function PromptsContainer() {
     }
   };
   
-  const { setActiveTab } = useUIStore();
-  const { setPendingPrompt } = useChatStore();
 
   useEffect(() => {
     loadPrompts();

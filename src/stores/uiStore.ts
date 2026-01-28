@@ -15,9 +15,13 @@ interface UIState {
   profileModalOpen: boolean;
   settingsModalOpen: boolean;
   sourceToolModalOpen: boolean;
+  searchModalOpen: boolean;
   
   // Notifications
   notifications: Notification[];
+  
+  // Search
+  searchQuery: string;
   
   // Actions
   setActiveTab: (tab: Tab) => void;
@@ -30,8 +34,11 @@ interface UIState {
   closeSettingsModal: () => void;
   openSourceToolModal: () => void;
   closeSourceToolModal: () => void;
+  openSearchModal: () => void;
+  closeSearchModal: () => void;
   showNotification: (message: string, type?: Notification['type'], duration?: number) => void;
   removeNotification: (id: string) => void;
+  setSearchQuery: (query: string) => void;
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
@@ -42,7 +49,9 @@ export const useUIStore = create<UIState>((set, get) => ({
   profileModalOpen: false,
   settingsModalOpen: false,
   sourceToolModalOpen: false,
+  searchModalOpen: false,
   notifications: [],
+  searchQuery: '',
 
   // Navigation
   setActiveTab: (tab) => set({ activeTab: tab }),
@@ -66,6 +75,10 @@ export const useUIStore = create<UIState>((set, get) => ({
   openSourceToolModal: () => set({ sourceToolModalOpen: true }),
   closeSourceToolModal: () => set({ sourceToolModalOpen: false }),
 
+  // Search modal
+  openSearchModal: () => set({ searchModalOpen: true }),
+  closeSearchModal: () => set({ searchModalOpen: false }),
+
   // Notifications
   showNotification: (message, type = 'info', duration = 3000) => {
     const id = 'notif_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
@@ -88,4 +101,6 @@ export const useUIStore = create<UIState>((set, get) => ({
       notifications: state.notifications.filter((n) => n.id !== id),
     }));
   },
+
+  setSearchQuery: (query) => set({ searchQuery: query }),
 }));

@@ -9,9 +9,9 @@ import type {
   Settings, 
   UserProfile,
   Prompt,
-  PromptCategory
+  PromptCategory,
+  GeneratedImage
 } from '../../types';
-import { deletePhysicalFile, deleteProjectDirectory } from './fs';
 import { PREMADE_PROMPTS } from '../../data/premadePrompts';
 
 class TauriSqlService {
@@ -106,6 +106,17 @@ class TauriSqlService {
         content TEXT NOT NULL,
         category TEXT NOT NULL,
         icon TEXT
+      )
+    `);
+
+    // Generated Images table
+    await this.db.execute(`
+      CREATE TABLE IF NOT EXISTS generated_images (
+        id TEXT PRIMARY KEY,
+        prompt TEXT NOT NULL,
+        url TEXT NOT NULL,
+        model TEXT NOT NULL,
+        created_at INTEGER NOT NULL
       )
     `);
   }
@@ -240,10 +251,7 @@ class TauriSqlService {
     await this.init();
     if (!this.db) return false;
 
-    // 1. Delete physical files
-    await deleteProjectDirectory(projectId); // Delete entire project directory
-
-    // 2. SQL Cleanup (Cascading)
+    // SQL Cleanup (Cascading)
     await this.db.execute('DELETE FROM projects WHERE id = $1', [projectId]);
     
     return true;
@@ -502,18 +510,8 @@ class TauriSqlService {
   async deleteFile(fileId: string): Promise<boolean> {
     await this.init();
     if (!this.db) return false;
-    
-    // 1. Get file info to know the path
-    const file = await this.getFile(fileId);
-    if (file) {
-      try {
-        await deletePhysicalFile(file.id, file.projectId);
-      } catch (e) {
-        console.warn(`Failed to delete physical file ${file.id}:`, e);
-      }
-    }
 
-    // 2. SQL Cleanup
+    // SQL Cleanup
     await this.db.execute('DELETE FROM files WHERE id = $1', [fileId]);
     return true;
   }
@@ -623,6 +621,42 @@ class TauriSqlService {
     await this.db.execute('DELETE FROM prompts WHERE id = $1', [promptId]);
     return true;
   }
+
+  // ============ Generated Images ============
+
+  async getAllGeneratedImages(): Promise<GeneratedImage[]> {
+    await this.init();
+    if (!this.db) return [];
+
+    const images = await this.db.select<any[]>('SELECT * FROM generated_images ORDER BY created_at DESC');
+    return images.map(img => ({
+      id: img.id,
+      prompt: img.prompt,
+      url: img.url,
+      model: img.model,
+      createdAt: img.created_at
+    }));
+  }
+
+  async saveGeneratedImage(image: GeneratedImage): Promise<void> {
+    await this.init();
+    if (!this.db) return;
+
+    await this.db.execute(
+      `INSERT INTO generated_images (id, prompt, url, model, created_at)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [image.id, image.prompt, image.url, image.model, image.createdAt]
+    );
+  }
+
+  async deleteGeneratedImage(id: string): Promise<boolean> {
+    await this.init();
+    if (!this.db) return false;
+
+    await this.db.execute('DELETE FROM generated_images WHERE id = $1', [id]);
+    return true;
+  }
+
 }
 
 export const sqlService = new TauriSqlService();

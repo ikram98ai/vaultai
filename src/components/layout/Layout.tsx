@@ -1,6 +1,7 @@
 import { Sidebar } from './Sidebar';
 import { MainContent } from './MainContent';
 import { ProfileModal } from '../modals/ProfileModal';
+import { SearchModal } from '../modals/SearchModal';
 import { useUIStore } from '../../stores/uiStore';
 import { Menu } from 'lucide-react';
 
@@ -40,6 +41,9 @@ export function Layout() {
       {profileModalOpen && (
         <ProfileModal onClose={closeProfileModal} />
       )}
+
+      {/* Search Modal */}
+      <SearchModal />
     </div>
   );
 }

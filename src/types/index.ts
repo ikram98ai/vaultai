@@ -117,6 +117,26 @@ export interface UserProfile {
   name: string;
   email?: string;
   avatar?: string;
+  pronouns?: string;
+  dob?: string;
+  location?: string;
+  occupation?: string;
+  employer?: string;
+  aliases?: string;
+  interests?: string;
+  communicationStyle?: string;
+  relationships?: string;
+  notes?: string;
+}
+
+// ============ Image Types ============
+
+export interface GeneratedImage {
+  id: string;
+  prompt: string;
+  url: string;
+  model: string;
+  createdAt: number;
 }
 
 // ============ Model Types ============

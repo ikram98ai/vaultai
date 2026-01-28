@@ -16,11 +16,15 @@ export function FilesContainer() {
     updateUploadingFile
   } = useFileStore();
   const [isDragging, setIsDragging] = useState(false);
-  const showNotification = useUIStore((state) => state.showNotification);
+  const { showNotification, searchQuery } = useUIStore();
 
   useEffect(() => {
     loadFiles();
   }, []);
+
+  const filteredFiles = searchQuery.trim() 
+    ? files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : files;
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -253,14 +257,14 @@ export function FilesContainer() {
               <div className="w-6 h-6 border-2 border-border border-t-accent rounded-full animate-spin mb-3"></div>
               <p className="text-sm">Loading files...</p>
             </div>
-          ) : (files.length === 0 && uploadingFiles.length === 0) ? (
+          ) : (filteredFiles.length === 0 && uploadingFiles.length === 0) ? (
             <div className="col-span-full py-16 flex flex-col items-center justify-center text-text-muted  rounded-xl text-center px-4">
                 <File size={48} className="mb-4 opacity-50" />
-                <h4 className="text-lg font-medium text-text-primary mb-2">No files uploaded yet</h4>
-                <p className="text-sm max-w-md">Upload your first document to get started with enhanced AI conversations</p>
+                <h4 className="text-lg font-medium text-text-primary mb-2">No files found</h4>
+                <p className="text-sm max-w-md">Try a different search term or upload a new document</p>
             </div>
           ) : (
-            files.map((file) => (
+            filteredFiles.map((file) => (
               <div key={file.id} className="bg-bg-secondary/30 border border-border rounded-lg p-4 relative group hover:border-accent transition-all duration-200" data-filename={file.name}>
                 <div className="flex items-start gap-3">
                     <div className="p-2 bg-bg-tertiary rounded text-accent-primary shrink-0">
