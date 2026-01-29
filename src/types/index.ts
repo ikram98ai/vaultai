@@ -91,27 +91,7 @@ export interface UploadResult {
   error?: string;
 }
 
-// ============ Settings Types ============
-
-export interface Settings {
-  model: {
-    chat: string;
-  };
-  ui: {
-    streamingEnabled: boolean;
-  };
-  rag: {
-    enabled: boolean;
-  };
-  agent: {
-    enabled: boolean;
-  };
-  privateSearch: boolean;
-  privacy?: {
-    offlineMode: boolean;
-    clearMemoryAfterSensitive: boolean;
-  };
-}
+// ============ Profile Types ============
 
 export interface UserProfile {
   name: string;
@@ -141,45 +121,17 @@ export interface GeneratedImage {
 
 // ============ Model Types ============
 
-export interface Model {
+export interface SystemTier {
+  tier: string;
+  defaultModel: string;
+  supportedModels: ModelInfo[];
+}
+
+export interface ModelInfo {
   id: string;
   name: string;
   description: string;
-  type: "chat" | "code" | "fast" | "image";
 }
-
-export const MODELS: Model[] = [
-  {
-    id: "vaultai16-chat",
-    name: "Mistral Nemo 12B",
-    description: "Conversational AI",
-    type: "chat",
-  },
-  {
-    id: "vaultai16-code",
-    name: "Devstral",
-    description: "Code Assistant",
-    type: "code",
-  },
-  {
-    id: "vaultai16-fast",
-    name: "LLaMA 3.2 3B",
-    description: "Fast Responses",
-    type: "fast",
-  },
-  {
-    id: "flux-schnell",
-    name: "FLUX.1-schnell",
-    description: "Image Generation",
-    type: "image",
-  },
-  {
-    id: "infiniteyou-flux",
-    name: "InfiniteYou-FLUX",
-    description: "Identity-Preserving Image",
-    type: "image",
-  },
-];
 
 // ============ Query Types ============
 

@@ -6,7 +6,7 @@ import { useProjectStore } from './stores/projectStore';
 import './App.css';
 
 function App() {
-  const { loadSettings, detectSystemTier } = useAppStore();
+  const { detectSystemTier } = useAppStore();
   const { loadChatHistory, createNewChat } = useChatStore();
   const { loadProjects } = useProjectStore();
 
@@ -15,9 +15,6 @@ function App() {
     const init = async () => {
       // Detect system capabilities
       await detectSystemTier();
-      
-      // Load settings
-      await loadSettings();
       
       // Load chat history
       await loadChatHistory();

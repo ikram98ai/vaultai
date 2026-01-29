@@ -8,13 +8,12 @@ import type {
   FileInfo,
   FileData,
   UploadResult,
-  Settings,
   QueryOptions,
   QueryResponse,
-  UserProfile,
   Prompt,
   Message,
-  GeneratedImage
+  GeneratedImage,
+  SystemTier
 } from "../../types";
 
 
@@ -134,29 +133,10 @@ export const deleteProject = async (projectId: string): Promise<boolean> => {
 export const getProjectFiles = (projectId: string): Promise<FileInfo[]> => 
   sqlService.getProjectFiles(projectId);
 
-// ============ Settings Commands ============
-
-export const getSettings = (): Promise<Settings> => 
-  sqlService.getSettings();
-
-export const saveSettings = (settings: Settings): Promise<Settings> => 
-  sqlService.saveSettings(settings);
-
-// ============ Profile Commands ============
-
-export const getUserProfile = (): Promise<UserProfile | null> => 
-  sqlService.getUserProfile();
-
-export const saveUserProfile = (profile: UserProfile): Promise<UserProfile> => 
-  sqlService.saveUserProfile(profile);
-
 
 // ============ System Commands ============
 
-export const getSystemTier = (): Promise<{ 
-  tier: string; 
-  recommendedModels: { default: string } 
-}> => 
+export const getSystemTier = (): Promise<SystemTier> => 
   invoke("get_system_tier");
 
 export const getMemoryUsage = (): Promise<{ 

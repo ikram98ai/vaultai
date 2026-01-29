@@ -1,11 +1,13 @@
 import { create } from 'zustand';
-import type { Settings, UserProfile } from '../types';
-import * as commands from '../services/tauri/commands';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import type { ModelInfo, UserProfile } from '../types';
+import {getSystemTier} from '../services/tauri/commands';
 
 interface AppState {
   // Model state
   currentModel: string;
-  systemTier: 'lite' | 'standard' | 'performance';
+  systemTier:  'lite' | 'pro' | 'multi-user' | 'ultra' | 'max';
+  supportedModels: ModelInfo[];
   
   // Feature toggles
   ragEnabled: boolean;
@@ -21,18 +23,13 @@ interface AppState {
   // Theme
   theme: 'dark' | 'light' | 'system';
 
-  // Settings
-  settings: Settings | null;
-  isLoadingSettings: boolean;
-  
   // Profile
   userProfile: UserProfile | null;
-  isLoadingProfile: boolean;
 
   // Actions
   setTheme: (theme: 'dark' | 'light' | 'system') => void;
   setCurrentModel: (model: string) => void;
-  setSystemTier: (tier: 'lite' | 'standard' | 'performance') => void;
+  setSystemTier: (tier: 'lite' | 'pro' | 'multi-user' | 'ultra' | 'max') => void;
   setRagEnabled: (enabled: boolean) => void;
   setWebSearchEnabled: (enabled: boolean) => void;
   setAgentMode: (enabled: boolean) => void;
@@ -40,158 +37,77 @@ interface AppState {
   setSourceProfileEnabled: (enabled: boolean) => void;
   setSourceProjectsEnabled: (enabled: boolean) => void;
   toggleSourceProject: (slug: string) => void;
-  loadSettings: () => Promise<void>;
-  saveSettings: () => Promise<void>;
+  setUserProfile: (profile: UserProfile | null) => void;
+  setSupportedModels: (models: Array<{id: string, name: string, description: string}>) => void;
   detectSystemTier: () => Promise<void>;
-  loadProfile: () => Promise<void>;
-  saveProfile: (profile: UserProfile) => Promise<void>;
-  clearProfile: () => Promise<void>;
+  clearProfile: () => void;
 }
 
-export const useAppStore = create<AppState>((set, get) => ({
-  // Initial state
-  theme: 'dark',
-  currentModel: 'vaultai16-code',
-  systemTier: 'lite',
-  ragEnabled: true,
-  webSearchEnabled: true,
-  agentModeEnabled: false,
-  sourceWebEnabled: true,
-  sourceProfileEnabled: true,
-  sourceProjectsEnabled: true,
-  sourceProjectSlugs: (() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('sourceToolProjectToggles') || '{}');
-      return Object.keys(stored).filter(slug => stored[slug]);
-    } catch (e) {
-      return [];
-    }
-  })(),
-  settings: null,
-  isLoadingSettings: false,
-  userProfile: null,
-  isLoadingProfile: false,
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      // Initial state
+      theme: 'dark',
+      currentModel: '',
+      systemTier: 'lite',
+      supportedModels: [],
+      ragEnabled: true,
+      webSearchEnabled: true,
+      agentModeEnabled: false,
+      sourceWebEnabled: true,
+      sourceProfileEnabled: true,
+      sourceProjectsEnabled: true,
+      sourceProjectSlugs: [],
+      userProfile: null,
 
-  // Actions
-  setTheme: (theme) => set({ theme }),
-  setCurrentModel: (model) => {
-    set({ currentModel: model });
-    // Auto-save settings when model changes
-    get().saveSettings();
-  },
-
-  setSystemTier: (tier) => set({ systemTier: tier }),
-
-  setRagEnabled: (enabled) => {
-    set({ ragEnabled: enabled });
-    get().saveSettings();
-  },
-
-  setWebSearchEnabled: (enabled) => {
-    set({ webSearchEnabled: enabled });
-    get().saveSettings();
-  },
-
-  setAgentMode: (enabled) => set({ agentModeEnabled: enabled }),
-  setSourceWebEnabled: (enabled) => set({ sourceWebEnabled: enabled }),
-  setSourceProfileEnabled: (enabled) => set({ sourceProfileEnabled: enabled }),
-  setSourceProjectsEnabled: (enabled) => set({ sourceProjectsEnabled: enabled }),
-  
-  toggleSourceProject: (slug) => {
-    set((state) => {
-      const isSelected = state.sourceProjectSlugs.includes(slug);
-      const newSlugs = isSelected
-        ? state.sourceProjectSlugs.filter(s => s !== slug)
-        : [...state.sourceProjectSlugs, slug];
+      // Actions
+      setTheme: (theme) => set({ theme }),
+      setCurrentModel: (model) => set({ currentModel: model }),
+      setSystemTier: (tier) => set({ systemTier: tier }),
+      setRagEnabled: (enabled) => set({ ragEnabled: enabled }),
+      setWebSearchEnabled: (enabled) => set({ webSearchEnabled: enabled }),
+      setAgentMode: (enabled) => set({ agentModeEnabled: enabled }),
+      setSourceWebEnabled: (enabled) => set({ sourceWebEnabled: enabled }),
+      setSourceProfileEnabled: (enabled) => set({ sourceProfileEnabled: enabled }),
+      setSourceProjectsEnabled: (enabled) => set({ sourceProjectsEnabled: enabled }),
       
-      // Sync with localStorage for compatibility
-      try {
-        const stored = JSON.parse(localStorage.getItem('sourceToolProjectToggles') || '{}');
-        stored[slug] = !isSelected;
-        localStorage.setItem('sourceToolProjectToggles', JSON.stringify(stored));
-      } catch (e) {
-        console.error('Failed to sync project toggles to localStorage', e);
-      }
+      toggleSourceProject: (slug) => {
+        set((state) => {
+          const isSelected = state.sourceProjectSlugs.includes(slug);
+          const newSlugs = isSelected
+            ? state.sourceProjectSlugs.filter(s => s !== slug)
+            : [...state.sourceProjectSlugs, slug];
+          return { sourceProjectSlugs: newSlugs };
+        });
+      },
+
+      setUserProfile: (profile) => set({ userProfile: profile }),
+      clearProfile: () => set({ userProfile: null }),
+
+      setSupportedModels: (models) => set({ supportedModels: models }),
       
-      return { sourceProjectSlugs: newSlugs };
-    });
-  },
+      detectSystemTier: async () => {
+        try {
+          const { tier, defaultModel, supportedModels } = await getSystemTier();
+          const {currentModel} = get();
+          set({
+            systemTier: tier as any,
+            currentModel: currentModel || defaultModel,
+            supportedModels: supportedModels,
+          });
+        } catch (error) {
+          console.warn('Could not detect system tier:', error);
+          // Don't overwrite if we already have a tier from previous session
+          if (!get().systemTier) {
+            set({ systemTier: 'lite', currentModel: 'mistral-nemo-12b' });
+          }
+        }
+      },
 
-  loadSettings: async () => {
-    set({ isLoadingSettings: true });
-    try {
-      const settings = await commands.getSettings();
-      set({
-        settings,
-        currentModel: settings.model?.chat || 'vaultai16-code',
-        ragEnabled: settings.rag?.enabled ?? true,
-        webSearchEnabled: settings.privateSearch ?? true,
-        isLoadingSettings: false,
-      });
-    } catch (error) {
-      console.error('Failed to load settings:', error);
-      set({ isLoadingSettings: false });
+    }),
+    {
+      name: 'vaultai-app-storage',
+      storage: createJSONStorage(() => localStorage),
     }
-  },
-
-  saveSettings: async () => {
-    const { currentModel, ragEnabled, agentModeEnabled, webSearchEnabled } = get();
-    const settings: Settings = {
-      model: { chat: currentModel },
-      ui: { streamingEnabled: false },
-      rag: { enabled: ragEnabled },
-      agent:{enabled: agentModeEnabled},
-      privateSearch: webSearchEnabled,
-    };
-    
-    try {
-      await commands.saveSettings(settings);
-      set({ settings });
-    } catch (error) {
-      console.error('Failed to save settings:', error);
-    }
-  },
-
-  detectSystemTier: async () => {
-    try {
-      const { tier, recommendedModels } = await commands.getSystemTier();
-      set({
-        systemTier: tier as 'lite' | 'standard' | 'performance',
-        currentModel: recommendedModels?.default || 'vaultai16-code',
-      });
-    } catch (error) {
-      console.warn('Could not detect system tier:', error);
-      set({ systemTier: 'lite', currentModel: 'vaultai16-code' });
-    }
-  },
-
-  loadProfile: async () => {
-    set({ isLoadingProfile: true });
-    try {
-      const profile = await commands.getUserProfile();
-      set({ userProfile: profile, isLoadingProfile: false });
-    } catch (error) {
-      console.error('Failed to load profile:', error);
-      set({ isLoadingProfile: false });
-    }
-  },
-
-  saveProfile: async (profile: UserProfile) => {
-    try {
-      const savedProfile = await commands.saveUserProfile(profile);
-      set({ userProfile: savedProfile });
-    } catch (error) {
-      console.error('Failed to save profile:', error);
-    }
-  },
-
-  clearProfile: async () => {
-    try {
-      const emptyProfile: UserProfile = { name: '', email: '' };
-      await commands.saveUserProfile(emptyProfile);
-      set({ userProfile: emptyProfile });
-    } catch (error) {
-      console.error('Failed to clear profile:', error);
-    }
-  },
-}));
+  )
+);

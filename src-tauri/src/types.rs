@@ -28,15 +28,21 @@ pub struct QueryResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SystemTier {
     pub tier: String,
-    pub recommended_models: RecommendedModels,
+    pub default_model: String,
+    pub supported_models: Vec<ModelInfo>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RecommendedModels {
-    pub default: String,
+pub struct ModelInfo {
+    pub id: String,
+    pub name: String,
+    pub description: String,
 }
+
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryUsage {

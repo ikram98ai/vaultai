@@ -1,7 +1,7 @@
 use chrono::Local;
 use crate::types;
 
-// Helper to build temporal anchor like in rag_Routes.js
+// Helper to build temporal anchor
 fn build_temporal_anchor() -> String {
     let now = Local::now();
     format!(
@@ -32,8 +32,7 @@ fn build_project_context(project_slugs: &Option<Vec<String>>) -> String {
         _ => return String::new(),
     };
 
-    let mut context = String::from("[PROJECT CONTEXT]\n\
-        You are working within the following project(s): ");
+    let mut context = String::from("[PROJECT CONTEXT]\n You are working within the following project(s): ");
     context.push_str(&slugs.join(", "));
     context.push_str("\n\
         When answering questions:\n\
