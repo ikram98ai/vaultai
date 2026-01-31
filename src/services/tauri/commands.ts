@@ -50,13 +50,13 @@ export const updateChatProperty = (
 // ============ AI Query Commands ============
 
 export const sendQuery = (
-  message: string, 
+  query: string, 
+  systemPrompt: string,
   history: Message[],
   model: string, 
-  options: QueryOptions
+  options: QueryOptions,
 ): Promise<QueryResponse> => 
-  invoke<QueryResponse>("send_query", { message, history, model, options });
-
+  invoke<QueryResponse>("send_query", { query, history, systemPrompt, model, options });
 // ============ File Commands ============
 
 export const uploadFiles = async (files: FileData[], projectId?: string): Promise<UploadResult> => {

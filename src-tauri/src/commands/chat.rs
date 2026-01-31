@@ -1,120 +1,194 @@
-use chrono::Local;
 use crate::types;
+use crate::app_state::AppState;
+use anyhow::Result;
+use mistralrs::{
+    PagedAttentionMetaBuilder, 
+    TextMessageRole, TextMessages, 
+    TextModelBuilder, 
+    VisionModelBuilder, Model,
+};
+use tauri::{Manager, State};
+use tauri::path::BaseDirectory;
+use std::path::PathBuf;
 
-// Helper to build temporal anchor
-fn build_temporal_anchor() -> String {
-    let now = Local::now();
+
+fn build_prompt(
+    query: &str,
+    context: &str,
+    query_option: &types::QueryOptions,
+) -> String {
+    let has_knowledgebase = query_option.rag_enabled;
+    let has_project_search = query_option.project_ids.is_some();
+    let has_web_search = query_option.web_search_enabled;
+
+    let context_source_label = if has_project_search && !has_knowledgebase && !has_web_search {
+        "PROJECT DOCUMENTS"
+    } else if has_knowledgebase && !has_project_search && !has_web_search {
+        "KNOWLEDGEBASE DOCUMENTS"
+    } else if has_web_search && !has_project_search && !has_knowledgebase {
+        "WEB SEARCH RESULTS"
+    } else {
+        "SEARCH RESULTS"
+    };
     format!(
-        "TEMPORAL ANCHOR - CRITICAL FOR ALL TIME REFERENCES:\n\
-        Current Date: {}\n\
-        Current Time: {}\n\
-        Use this as your reference point for ANY temporal reference.\n\n",
-        now.format("%A, %B %d, %Y"),
-        now.format("%I:%M:%S %p")
+        "User Query:\n{}\n\nContext:\n    [{} - THESE ARE THE FACTS]\n⚠️ CRITICAL: Read these documents CAREFULLY. They contain the CORRECT information:\n{}",
+        query, context_source_label, context
     )
 }
 
-// Helper to build user profile section (simulated for now)
-fn build_user_profile_section(enabled: bool) -> String {
-    if !enabled {
-        return String::new();
+
+pub async fn generate(messages: Vec<types::ChatMessage>, model: &Model) -> Result<String> {
+    
+    let mut chat_request = TextMessages::new();
+    for msg in messages {
+        let role = match msg.role.as_str() {
+            "system" => TextMessageRole::System,
+            "user" => TextMessageRole::User,
+            "assistant" => TextMessageRole::Assistant,
+            _ => TextMessageRole::User,
+        };
+        chat_request = chat_request.add_message(role, msg.content);
     }
-    "[USER PROFILE]\n\
-    Name: User (Simulated)\n\
-    Note: Profile integration is enabled.\n\n"
-        .to_string()
+   
+    let response = model.send_chat_request(chat_request).await?;
+
+    let response_text = response.choices[0].message.content.clone().unwrap_or_default();
+    println!("Model response: {}", response_text);
+    dbg!(
+        response.usage.avg_prompt_tok_per_sec,
+        response.usage.avg_compl_tok_per_sec
+    );
+
+    Ok(response_text)
 }
 
-// Helper to build project context (simulated for now)
-fn build_project_context(project_slugs: &Option<Vec<String>>) -> String {
-    let slugs = match project_slugs {
-        Some(s) if !s.is_empty() => s,
-        _ => return String::new(),
-    };
 
-    let mut context = String::from("[PROJECT CONTEXT]\n You are working within the following project(s): ");
-    context.push_str(&slugs.join(", "));
-    context.push_str("\n\
-        When answering questions:\n\
-        - Prioritize information from these project documents\n\
-        - Use \"we\" when referring to work in these projects\n\
-        - Reference project-specific details when relevant\n\n");
-    context
-}
 
 #[tauri::command]
-pub fn send_query(
-    message: String,
-    _history: Vec<types::ChatMessage>,
+pub async fn send_query(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    query: String,
+    system_prompt: String,
+    history: Vec<types::ChatMessage>,
     model: String,
     options: types::QueryOptions,
-) -> types::QueryResponse {
+) -> Result<types::QueryResponse, String> {
 
     let generation_time = std::time::Instant::now();
 
-    let temporal_anchor = build_temporal_anchor();
-    let user_profile = build_user_profile_section(options.user_profile_enabled);
-    let project_context = build_project_context(&options.project_slugs);
+    let model_path_buf = app.path().resolve("_up_/models/gemma-3-270m-it", BaseDirectory::Resource)
+        .unwrap_or_else(|_| PathBuf::from("_up_/models/gemma-3-270m-it"));
     
+    let model_id = model_path_buf.to_string_lossy().to_string();
 
-    let mut enabled_sources = Vec::new();
+    println!("Model path: {:?}", model_path_buf);
+    println!("User query: {}", query);
+
+    let mut context = String::new();
     if options.rag_enabled {
-        enabled_sources.push("Knowledge Base");
+        context.push_str("RAG is enabled.\n\n ");
     }
     if options.web_search_enabled {
-        enabled_sources.push("Web Search");
+        context.push_str("Web search is enabled.\n\n ");
     }
-    if options.user_profile_enabled {
-        enabled_sources.push("User Profile");
+    if options.agent_mode_enabled {
+        context.push_str("Agent mode is enabled.\n\n ");
     }
-    if let Some(slugs) = &options.project_slugs {
-        if !slugs.is_empty() {
-            enabled_sources.push("Project Documents");
+    if options.project_ids.is_some() {
+        context.push_str("Project-specific context is included. ");
+    }
+
+    let prompt = build_prompt(&query, &context, &options);
+
+
+    let mut messages = vec![types::ChatMessage {
+        role: "system".to_string(),
+        content: system_prompt, 
+    }];
+
+    let mut clean_history = history.clone();
+    if let Some(last_msg) = clean_history.last() {
+        if last_msg.role == "user" {
+            clean_history.pop();
         }
     }
 
-    let system_prompt_logic = format!(
-        "{}You are VaultAI, a private AI assistant with access to multiple information sources.\n\n\
-        {}{}\
-        CONTEXT PRIORITY ORDER:\n\
-        1. PROJECT-SPECIFIC context (highest priority)\n\
-        2. KNOWLEDGEBASE DOCUMENTS\n\
-        3. WEB SEARCH RESULTS\n\
-        4. User's profile information\n\n\
-        [SEARCH RESULTS - SIMULATED]\n\
-        (Retrieval logic would insert documents here based on enabled sources)\n",
-        temporal_anchor,
-        project_context,
-        user_profile
-    );
+    messages.extend(clean_history);
+    messages.push(types::ChatMessage {
+        role: "user".to_string(),
+        content: prompt,
+    });
 
-    let response_content = format!(
-        "### Dummy Response (Tauri Backend)\n\n\
-        I have received your request and constructed the following context structure based on your settings:\n\n\
-        **User Message:** \"{}\"\n\
-        **Model:** `{}`\n\n\
-        **Enabled Sources:**\n{}\n\n\
-        --- \n\
-        **System Prompt Construction Logic:**\n\
-        ```\n\
-        {}\
-        ```\n\
-        --- \n\
-        The actual integration with Ollama and retrieval from Qdrant/DuckDuckGo is being implemented in the Rust layer to match the Node.js reference logic.",
-        message,
-        model,
-        if enabled_sources.is_empty() { "- None".to_string() } else { enabled_sources.iter().map(|s| format!("- {}", s)).collect::<Vec<_>>().join("\n") },
-        system_prompt_logic
-    );
+    // Model loading logic
+    let mut state_guard = state.model.lock().await;
+    
+    let need_reload = if let Some((loaded_id, _)) = &*state_guard {
+        loaded_id != &model_id
+    } else {
+        true
+    };
 
-    // Simulate generation time
-    std::thread::sleep(std::time::Duration::from_millis(1500));
+    if need_reload {
+         println!("Loading model: {}", model_id);
+         
+         // Explicitly type the result of the async block to avoid inference ambiguity
+         let load_result: Result<Model> = async {
+            if model_id.contains("gemma-3") {
+                println!("Using VisionModelBuilder");
+                VisionModelBuilder::new(model_id.clone())
+                    .with_logging()
+                    .with_paged_attn(|| PagedAttentionMetaBuilder::default().build())? 
+                    .build()
+                    .await
+            } else {
+                TextModelBuilder::new(model_id.clone())
+                    .with_logging()
+                    .with_paged_attn(|| PagedAttentionMetaBuilder::default().build())? 
+                    .build()
+                    .await
+            }
+         }.await;
+
+         match load_result {
+            Ok(new_model) => {
+                *state_guard = Some((model_id.clone(), new_model));
+            }
+            Err(e) => {
+                // Return a successful IPC call containing the error info
+                return Ok(types::QueryResponse {
+                    success: false,
+                    content: None,
+                    generation_time: None,
+                    error: Some(format!("Failed to load model: {}", e)),
+                });
+            }
+         }
+    } else {
+         println!("Using cached model: {}", model_id);
+    }
+
+    let model_instance = &state_guard.as_ref().unwrap().1;
+
+    let response_content = generate(messages, model_instance).await;
 
     let generation_duration = generation_time.elapsed();
-    types::QueryResponse {
-        success: true,
-        content: Some(response_content),
-        generation_time: Some(generation_duration.as_secs_f64()),
-        error: None,
+    
+    match response_content {
+        Ok(content) => Ok(types::QueryResponse {
+            success: true,
+            content: Some(content),
+            generation_time: Some(generation_duration.as_secs_f64()),
+            error: None,
+        }),
+        Err(e) => {
+            println!("Generation error: {:?}", e);
+            Ok(types::QueryResponse {
+                success: false,
+                content: None,
+                generation_time: Some(generation_duration.as_secs_f64()),
+                error: Some(e.to_string()),
+            })
+        }
     }
 }

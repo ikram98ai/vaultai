@@ -7,9 +7,7 @@ pub struct QueryOptions {
     pub rag_enabled: bool,
     pub web_search_enabled: bool,
     pub agent_mode_enabled: bool,
-    pub user_profile_enabled: bool,
-    pub project_id: Option<String>,
-    pub project_slugs: Option<Vec<String>>,
+    pub project_ids: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

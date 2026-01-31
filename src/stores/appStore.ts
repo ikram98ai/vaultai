@@ -18,7 +18,7 @@ interface AppState {
   sourceWebEnabled: boolean;
   sourceProfileEnabled: boolean;
   sourceProjectsEnabled: boolean;
-  sourceProjectSlugs: string[];
+  sourceProjectIds: string[];
   
   // Theme
   theme: 'dark' | 'light' | 'system';
@@ -36,7 +36,7 @@ interface AppState {
   setSourceWebEnabled: (enabled: boolean) => void;
   setSourceProfileEnabled: (enabled: boolean) => void;
   setSourceProjectsEnabled: (enabled: boolean) => void;
-  toggleSourceProject: (slug: string) => void;
+  toggleSourceProject: (id: string) => void;
   setUserProfile: (profile: UserProfile | null) => void;
   setSupportedModels: (models: Array<{id: string, name: string, description: string}>) => void;
   detectSystemTier: () => Promise<void>;
@@ -57,7 +57,7 @@ export const useAppStore = create<AppState>()(
       sourceWebEnabled: true,
       sourceProfileEnabled: true,
       sourceProjectsEnabled: true,
-      sourceProjectSlugs: [],
+      sourceProjectIds: [],
       userProfile: null,
 
       // Actions
@@ -71,13 +71,13 @@ export const useAppStore = create<AppState>()(
       setSourceProfileEnabled: (enabled) => set({ sourceProfileEnabled: enabled }),
       setSourceProjectsEnabled: (enabled) => set({ sourceProjectsEnabled: enabled }),
       
-      toggleSourceProject: (slug) => {
+      toggleSourceProject: (id) => {
         set((state) => {
-          const isSelected = state.sourceProjectSlugs.includes(slug);
-          const newSlugs = isSelected
-            ? state.sourceProjectSlugs.filter(s => s !== slug)
-            : [...state.sourceProjectSlugs, slug];
-          return { sourceProjectSlugs: newSlugs };
+          const isSelected = state.sourceProjectIds.includes(id);
+          const newIds = isSelected
+            ? state.sourceProjectIds.filter(s => s !== id)
+            : [...state.sourceProjectIds, id];
+          return { sourceProjectIds: newIds };
         });
       },
 

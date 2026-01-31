@@ -46,7 +46,7 @@ export function SourceToolModal() {
     sourceProfileEnabled, setSourceProfileEnabled,
     ragEnabled, setRagEnabled,
     sourceProjectsEnabled, setSourceProjectsEnabled,
-    sourceProjectSlugs, toggleSourceProject
+    sourceProjectIds, toggleSourceProject
   } = useAppStore();
 
   const { projects, loadProjects } = useProjectStore();
@@ -115,10 +115,10 @@ export function SourceToolModal() {
               {projects.map((project) => (
                 <SourceItem
                   key={project.id}
-                  id={`project-${project.slug}`}
+                  id={`project-${project.id}`}
                   label={project.name}
-                  checked={sourceProjectSlugs.includes(project.slug)}
-                  onChange={() => toggleSourceProject(project.slug)}
+                  checked={sourceProjectIds.includes(project.id)}
+                  onChange={() => toggleSourceProject(project.id)}
                   isProject={true}
                 />
               ))}

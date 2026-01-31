@@ -55,7 +55,17 @@ Clone the repository and install dependencies:
  pnpm install
 ```
 
-### 3. Run in Development Mode
+### 3. Download AI Models
+**MacOS/Linux**: `curl -LsSf https://hf.co/cli/install.sh | bash`
+
+**Window**: `powershell -ExecutionPolicy ByPass -c "irm https://hf.co/cli/install.ps1 | iex"`
+
+- `hf auth login`
+
+- `hf download meta-llama/Llama-3.2-3B  --exclude "original/" --local-dir ./models/llama-3.2-3B`
+
+
+### 4. Run in Development Mode
 
 This starts the Vite dev server and the Tauri Rust window:
 

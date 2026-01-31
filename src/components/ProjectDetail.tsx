@@ -90,7 +90,7 @@ export function ProjectDetail() {
       webSearchEnabled: webSearchEnabled,
       agentModeEnabled: agentModeEnabled,
       userProfileEnabled: sourceProfileEnabled,
-      projectId: currentProject.id,
+      projectIds: [currentProject.id],
     });
   };
 

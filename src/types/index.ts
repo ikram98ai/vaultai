@@ -140,8 +140,7 @@ export interface QueryOptions {
   webSearchEnabled: boolean;
   agentModeEnabled: boolean;
   userProfileEnabled: boolean;
-  projectId?: string;
-  projectSlugs?: string[];
+  projectIds?: string[];
 }
 
 export interface QueryResponse {

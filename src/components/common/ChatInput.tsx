@@ -8,10 +8,13 @@ import { FileText, Paperclip, SlidersHorizontal, ArrowUp } from "lucide-react";
 
 type ChatInputProps = {
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
-  variant?: 'default' | 'welcome';
+  variant?: "default" | "welcome";
 };
 
-export function ChatInput({ textareaRef, variant = 'default' }: ChatInputProps) {
+export function ChatInput({
+  textareaRef,
+  variant = "default",
+}: ChatInputProps) {
   if (!textareaRef) textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const {
@@ -21,11 +24,18 @@ export function ChatInput({ textareaRef, variant = 'default' }: ChatInputProps) 
     agentModeEnabled,
     setAgentMode,
     sourceProjectsEnabled,
-    sourceProjectSlugs,
+    sourceProjectIds,
     sourceProfileEnabled,
   } = useAppStore();
-  const { sendMessage, setIsSending, isSending, pendingPrompt, setPendingPrompt } = useChatStore();
-  const { setShowWelcome, openSourceToolModal, sourceToolModalOpen } = useUIStore();
+  const {
+    sendMessage,
+    setIsSending,
+    isSending,
+    pendingPrompt,
+    setPendingPrompt,
+  } = useChatStore();
+  const { setShowWelcome, openSourceToolModal, sourceToolModalOpen } =
+    useUIStore();
 
   useEffect(() => {
     if (pendingPrompt && textareaRef.current) {
@@ -59,7 +69,7 @@ export function ChatInput({ textareaRef, variant = 'default' }: ChatInputProps) 
       ragEnabled,
       webSearchEnabled,
       agentModeEnabled,
-      projectSlugs: sourceProjectsEnabled ? sourceProjectSlugs : [],
+      projectIds: sourceProjectsEnabled ? sourceProjectIds : [],
       userProfileEnabled: sourceProfileEnabled,
     });
     setIsSending(false);
@@ -83,9 +93,12 @@ export function ChatInput({ textareaRef, variant = 'default' }: ChatInputProps) 
   };
 
   return (
-    <div className={`${variant === 'welcome' ? 'w-full' : 'bg-bg-primary pt-4 px-6 pb-6 sticky bottom-0 w-full'}`}>
-      <div className={`${variant === 'welcome' ? 'w-full' : 'max-w-250 mx-auto'} relative bg-bg-secondary/30 border border-border rounded-[20px] ${variant === 'welcome' ? 'py-8.75 px-6.25' : 'p-3'} transition-all focus-within:border-accent focus-within:ring-1 focus-within:ring-accent`}>
-        
+    <div
+      className={`${variant === "welcome" ? "w-full" : "bg-bg-primary pt-4 px-6 pb-6 sticky bottom-0 w-full"}`}
+    >
+      <div
+        className={`${variant === "welcome" ? "w-full" : "max-w-250 mx-auto"} relative bg-bg-secondary/30 border border-border rounded-[20px] ${variant === "welcome" ? "py-8.75 px-6.25" : "p-3"} transition-all focus-within:border-accent focus-within:ring-1 focus-within:ring-accent`}
+      >
         {/* Prompt Reference Display (Hidden by default based on original code) */}
         <div id="chatPromptRef" className="hidden mb-2">
           <span className="inline-flex items-center gap-1 px-2 py-1 bg-bg-tertiary border border-border rounded text-xs text-text-secondary">
@@ -107,7 +120,10 @@ export function ChatInput({ textareaRef, variant = 'default' }: ChatInputProps) 
 
         {/* Chat Input Controls */}
         <div className="flex items-center gap-2 pl-2">
-          <button className="bg-transparent border-none text-text-muted  cursor-pointer p-1.5 rounded-md transition-all flex items-center justify-center opacity-60 hover:opacity-100 hover:text-text-secondary" id="attachBtnChat">
+          <button
+            className="bg-transparent border-none text-text-muted  cursor-pointer p-1.5 rounded-md transition-all flex items-center justify-center opacity-60 hover:opacity-100 hover:text-text-secondary"
+            id="attachBtnChat"
+          >
             <Paperclip size={20} />
           </button>
 
@@ -121,8 +137,13 @@ export function ChatInput({ textareaRef, variant = 'default' }: ChatInputProps) 
           </button>
 
           {/* Agent Mode Toggle */}
-          <div className="flex items-center mr-2 border-r border-border pr-2" title="Enable Agent">
-            <span className="text-[11px] mr-1.5 font-medium text-text-secondary">Agent</span>
+          <div
+            className="flex items-center mr-2 border-r border-border pr-2"
+            title="Enable Agent"
+          >
+            <span className="text-[11px] mr-1.5 font-medium text-text-secondary">
+              Agent
+            </span>
             <label className="relative inline-block w-8.5 h-4.5 cursor-pointer">
               <input
                 type="checkbox"
@@ -151,11 +172,9 @@ export function ChatInput({ textareaRef, variant = 'default' }: ChatInputProps) 
           </div>
         </div>
       </div>
-      
+
       {/* Source Tool Modal */}
-      {sourceToolModalOpen && (
-        <SourceToolModal />
-      )}
+      {sourceToolModalOpen && <SourceToolModal />}
     </div>
   );
 }
