@@ -1,7 +1,5 @@
 import { useState, useRef } from "react";
-import { useAppStore } from "../stores/appStore";
 import { ChatInput } from "./common/ChatInput";
-import { Image as ImageIcon, Search, Newspaper } from "lucide-react";
 
 const TAGLINES = [
   "Private. Personal. Unlimited. Uncensored. Unmonitored. Off-Grid.",
@@ -15,43 +13,23 @@ export function WelcomeScreen() {
   const [taglineIndex, setTaglineIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-
   // Rotate tagline
   const rotateTagline = () => {
     setTaglineIndex((prev) => (prev + 1) % TAGLINES.length);
   };
 
-  // Quick actions
-  const handleQuickAction = (action: string) => {
-    if (!textareaRef.current) return;
-
-    switch (action) {
-      case "images":
-        useAppStore.getState().setCurrentModel("flux-schnell");
-        textareaRef.current.value = "Create an image of ";
-        break;
-      case "research":
-        useAppStore.getState().setCurrentModel("vaultai16-chat");
-        textareaRef.current.value = "Research the latest information about ";
-        break;
-      case "news":
-        useAppStore.getState().setCurrentModel("vaultai16-chat");
-        textareaRef.current.value = "What are the latest news about ";
-        break;
-    }
-
-    textareaRef.current.focus();
-    textareaRef.current.setSelectionRange(
-      textareaRef.current.value.length,
-      textareaRef.current.value.length,
-    );
-  };
 
   return (
-    <div className="flex-1 flex items-start justify-center p-6 pt-[20vh]" id="welcomeScreen">
+    <div
+      className="flex-1 flex items-start justify-center p-6 pt-[20vh]"
+      id="welcomeScreen"
+    >
       <div className="w-full max-w-250 flex flex-col items-center gap-6">
         {/* Welcome Logo */}
-        <div className="flex flex-col items-center text-brand gap-6 w-full max-w-250 cursor-pointer" onClick={rotateTagline}>
+        <div
+          className="flex flex-col items-center text-brand gap-6 w-full max-w-250 cursor-pointer"
+          onClick={rotateTagline}
+        >
           <svg
             width="185"
             height="54"
@@ -75,38 +53,16 @@ export function WelcomeScreen() {
         </div>
 
         {/* Animated Tagline */}
-        <div id="tagline" className="font-sans text-lg text-[#6C717E] text-center mt-5 mb-10 opacity-100 transition-opacity duration-500">
+        <div
+          id="tagline"
+          className="font-sans text-lg text-[#6C717E] text-center mt-5 mb-10 opacity-100 transition-opacity duration-500"
+        >
           {TAGLINES[taglineIndex]}
         </div>
 
         {/* Input Area */}
         <div className="w-full max-w-174">
           <ChatInput variant="welcome" textareaRef={textareaRef} />
-        </div>
-
-        {/* Quick Actions */}
-        <div className="flex flex-wrap gap-2 justify-center mb-8">
-          <button
-            className="flex items-center gap-2 px-3.5 py-2 bg-transparent border border-border rounded-[20px] text-text-secondary text-[13px] font-inherit cursor-pointer transition-all duration-200 hover:bg-bg-input hover:border-accent hover:text-text-primary"
-            onClick={() => handleQuickAction("images")}
-          >
-            <ImageIcon size={16} />
-            Create Images
-          </button>
-          <button
-            className="flex items-center gap-2 px-3.5 py-2 bg-transparent border border-border rounded-[20px] text-text-secondary text-[13px] font-inherit cursor-pointer transition-all duration-200 hover:bg-bg-input hover:border-accent hover:text-text-primary"
-            onClick={() => handleQuickAction("research")}
-          >
-            <Search size={16} />
-            Research
-          </button>
-          <button
-            className="flex items-center gap-2 px-3.5 py-2 bg-transparent border border-border rounded-[20px] text-text-secondary text-[13px] font-inherit cursor-pointer transition-all duration-200 hover:bg-bg-input hover:border-accent hover:text-text-primary"
-            onClick={() => handleQuickAction("news")}
-          >
-            <Newspaper size={16} />
-            Latest News
-          </button>
         </div>
       </div>
     </div>

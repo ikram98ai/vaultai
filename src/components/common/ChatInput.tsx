@@ -4,7 +4,7 @@ import { useAppStore } from "../../stores/appStore";
 import { useUIStore } from "../../stores/uiStore";
 import { ModelSelector } from "./ModelSelector";
 import { SourceToolModal } from "../modals/SourceToolModal";
-import { FileText, Paperclip, SlidersHorizontal, ArrowUp } from "lucide-react";
+import { FileText, SlidersHorizontal, ArrowUp } from "lucide-react";
 
 type ChatInputProps = {
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
@@ -18,11 +18,9 @@ export function ChatInput({
   if (!textareaRef) textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const {
-    currentModel,
+    currentModelPath: currentModel,
     ragEnabled,
     webSearchEnabled,
-    agentModeEnabled,
-    setAgentMode,
     sourceProjectsEnabled,
     sourceProjectIds,
     sourceProfileEnabled,
@@ -68,7 +66,6 @@ export function ChatInput({
     await sendMessage(message, currentModel, {
       ragEnabled,
       webSearchEnabled,
-      agentModeEnabled,
       projectIds: sourceProjectsEnabled ? sourceProjectIds : [],
       userProfileEnabled: sourceProfileEnabled,
     });
@@ -121,13 +118,6 @@ export function ChatInput({
         {/* Chat Input Controls */}
         <div className="flex items-center gap-2 pl-2">
           <button
-            className="bg-transparent border-none text-text-muted  cursor-pointer p-1.5 rounded-md transition-all flex items-center justify-center opacity-60 hover:opacity-100 hover:text-text-secondary"
-            id="attachBtnChat"
-          >
-            <Paperclip size={20} />
-          </button>
-
-          <button
             className="bg-transparent border-none text-text-muted cursor-pointer p-1.5 rounded-md transition-all flex items-center justify-center opacity-60 hover:opacity-100 hover:text-text-secondary"
             id="sourceToolBtnAlt"
             title="Source Tool Modal"
@@ -135,27 +125,6 @@ export function ChatInput({
           >
             <SlidersHorizontal size={18} />
           </button>
-
-          {/* Agent Mode Toggle */}
-          <div
-            className="flex items-center mr-2 border-r border-border pr-2"
-            title="Enable Agent"
-          >
-            <span className="text-[11px] mr-1.5 font-medium text-text-secondary">
-              Agent
-            </span>
-            <label className="relative inline-block w-8.5 h-4.5 cursor-pointer">
-              <input
-                type="checkbox"
-                id="agentModeToggleChat"
-                className="peer sr-only"
-                checked={agentModeEnabled}
-                onChange={(e) => setAgentMode(e.target.checked)}
-              />
-              <span className="absolute inset-0 bg-[#2A2A2A] border border-border rounded-full transition-all duration-300 peer-checked:bg-brand peer-checked:border-brand"></span>
-              <span className="absolute left-0.75 top-0.75 h-3 w-3 bg-white rounded-full transition-all duration-300 peer-checked:translate-x-4"></span>
-            </label>
-          </div>
 
           <div className="flex gap-2 justify-end items-end ml-auto">
             <ModelSelector />

@@ -1,9 +1,78 @@
 use crate::types;
 use sysinfo::System;
+use std::fs;
+use std::path::{Path, PathBuf};
+use crate::types::ModelInfo;
+use tauri::Manager;
+use anyhow::Result;
+
+
+pub fn get_dir_size<P: AsRef<Path>>(path: P) -> Result<u64> {
+    let mut size = 0;
+    for entry in fs::read_dir(path)? {
+        let entry = entry?;
+        let metadata = entry.metadata()?;
+        if metadata.is_dir() {
+            size += get_dir_size(entry.path())?;
+        } else {
+            size += metadata.len();
+        }
+    }
+    Ok(size)
+}
+
+pub fn format_size(size: u64) -> String {
+    const KB: u64 = 1024;
+    const MB: u64 = KB * 1024;
+    const GB: u64 = MB * 1024;
+
+    if size >= GB {
+        format!("{:.2} GB", size as f64 / GB as f64)
+    } else if size >= MB {
+        format!("{:.2} MB", size as f64 / MB as f64)
+    } else if size >= KB {
+        format!("{:.2} KB", size as f64 / KB as f64)
+    } else {
+        format!("{} B", size)
+    }
+}
+
+pub fn get_available_models(app_handle: Option<&tauri::AppHandle>) -> Vec<ModelInfo> {
+    let mut models = Vec::new();
+    
+    // Try to get models from the app resource directory
+    let models_path = if let Some(app) = app_handle {
+        app.path().resolve("_up_/models", tauri::path::BaseDirectory::Resource)
+            .unwrap_or_else(|_| PathBuf::from("../models"))
+    } else {
+        PathBuf::from("../models")
+    };
+    
+    if let Ok(entries) = fs::read_dir(&models_path) {
+        for entry in entries.flatten() {
+            if let Ok(metadata) = entry.metadata() {
+                if metadata.is_dir() {
+                    let dir_path = entry.path();
+                    let dir_name = entry.file_name();
+                    let model_id = dir_name.to_string_lossy().to_string();
+                    
+                    let size = get_dir_size(&dir_path).unwrap_or(0);
+                    
+                    models.push(ModelInfo {
+                        name: model_id.clone(),
+                        model_path: models_path.join(&model_id).to_string_lossy().to_string(),
+                        size: format_size(size),
+                    });
+                }
+            }
+        }
+    }
+    models
+}
 
 
 #[tauri::command]
-pub fn get_system_tier() -> types::SystemTier {
+pub fn get_system_tier(app: tauri::AppHandle) -> types::SystemTier {
     let mut system = System::new_all();
     system.refresh_memory();
     
@@ -22,187 +91,18 @@ pub fn get_system_tier() -> types::SystemTier {
         "max".to_string()
     };
 
-    let (default_model, supported_models) = get_models_for_tier(&tier);
+    // Get available models from directory
+    let available_models = get_available_models(Some(&app));
+    
+    // Use first available model as default, fallback to hardcoded default
+    let default_model = available_models.first()
+        .map(|m| m.model_path.clone())
+        .unwrap_or_else(|| "gemma-3-270m-it".to_string());
 
     types::SystemTier {
         tier,
         default_model,
-        supported_models,
-    }
-}
-
-fn get_models_for_tier(tier: &str) -> (String, Vec<types::ModelInfo>) {
-    match tier {
-        "lite" => (
-            "llama-3.2-3b".to_string(),
-            vec![
-                types::ModelInfo {
-                    id: "mistral-nemo-12b".to_string(),
-                    name: "Mistral Nemo 12B".to_string(),
-                    description: "Smart, fast conversations on any topic - rivals GPT-4".to_string(),
-                },
-                types::ModelInfo {
-                    id: "llama-3.2-3b".to_string(),
-                    name: "Llama 3.2 3B".to_string(),
-                    description: "Swift, responsive, creative - perfect for writing".to_string(),
-                },
-                types::ModelInfo {
-                    id: "devstral-small".to_string(),
-                    name: "Devstral-Small-2505-Q4_K_M".to_string(),
-                    description: "Efficient coding assistance tailored to developers".to_string(),
-                },
-                types::ModelInfo {
-                    id: "flux-schnell".to_string(),
-                    name: "FLUX.1-schnell".to_string(),
-                    description: "Generate professional-grade visuals in seconds".to_string(),
-                },
-            ],
-        ),
-        "pro" => (
-            "gemma3-4b".to_string(),
-            vec![
-                types::ModelInfo {
-                    id: "gemma3-4b".to_string(),
-                    name: "Gemma3:4B".to_string(),
-                    description: "Lightweight and efficient reasoning model".to_string(),
-                },
-                types::ModelInfo {
-                    id: "llama3-8b".to_string(),
-                    name: "LLaMA3 8-13B".to_string(),
-                    description: "High performance general purpose models".to_string(),
-                },
-                types::ModelInfo {
-                    id: "gpt-oss-20b".to_string(),
-                    name: "GPT-OSS:20B".to_string(),
-                    description: "Advanced open-source intelligence".to_string(),
-                },
-                types::ModelInfo {
-                    id: "deepseek-coder".to_string(),
-                    name: "DeepSeek Coder".to_string(),
-                    description: "Advanced coding assistance".to_string(),
-                },
-                types::ModelInfo {
-                    id: "codellama-34b".to_string(),
-                    name: "Codellama-34B".to_string(),
-                    description: "Powerful coding model for complex tasks".to_string(),
-                },
-            ],
-        ),
-        "multi-user" => (
-            "gpt-oss-20b".to_string(),
-            vec![
-                types::ModelInfo {
-                    id: "gpt-oss-20b".to_string(),
-                    name: "GPT-OSS:20B".to_string(),
-                    description: "Advanced open-source intelligence".to_string(),
-                },
-                types::ModelInfo {
-                    id: "gemma3-12b".to_string(),
-                    name: "Gemma3:12B".to_string(),
-                    description: "Advanced reasoning for multiple users".to_string(),
-                },
-                types::ModelInfo {
-                    id: "deepseek-coder-33b".to_string(),
-                    name: "DeepSeek Coder-33B".to_string(),
-                    description: "High-capacity coding model".to_string(),
-                },
-                types::ModelInfo {
-                    id: "vaultai16-code".to_string(),
-                    name: "VaultAI16-Code".to_string(),
-                    description: "Optimized enterprise coding model".to_string(),
-                },
-            ],
-        ),
-        "ultra" => (
-            "gpt-oss-20b".to_string(),
-            vec![
-                types::ModelInfo {
-                    id: "gpt-oss-20b".to_string(),
-                    name: "GPT-OSS:20B".to_string(),
-                    description: "Advanced open-source intelligence".to_string(),
-                },
-                types::ModelInfo {
-                    id: "deepseek-llm-67b".to_string(),
-                    name: "DeepSeek LLM-67B".to_string(),
-                    description: "Massive scale reasoning and knowledge".to_string(),
-                },
-                types::ModelInfo {
-                    id: "gemma3-27b".to_string(),
-                    name: "Gemma3:27B".to_string(),
-                    description: "Top-tier performance for complex tasks".to_string(),
-                },
-                types::ModelInfo {
-                    id: "deepseek-coder-33b-ent".to_string(),
-                    name: "Enterprise Code Models".to_string(),
-                    description: "Including DeepSeek Coder-33B".to_string(),
-                },
-            ],
-        ),
-        "max" => (
-            "gpt-oss-120b".to_string(),
-            vec![
-                types::ModelInfo {
-                    id: "gpt-oss-120b".to_string(),
-                    name: "GPT-OSS:120B".to_string(),
-                    description: "Surpasses GPT-4 capabilities".to_string(),
-                },
-                types::ModelInfo {
-                    id: "mixtral-8x22b".to_string(),
-                    name: "Mixtral-8x22B".to_string(),
-                    description: "Multi-expert system for complex reasoning".to_string(),
-                },
-                types::ModelInfo {
-                    id: "deepseek-r1-32b".to_string(),
-                    name: "DeepSeek R1-32B".to_string(),
-                    description: "Advanced reasoning and analysis".to_string(),
-                },
-                types::ModelInfo {
-                    id: "simultaneous-models".to_string(),
-                    name: "Multi-Model Execution".to_string(),
-                    description: "Multiple models running simultaneously".to_string(),
-                },
-                types::ModelInfo {
-                    id: "deepseek-coder-33b-max".to_string(),
-                    name: "DeepSeek Coder-33B".to_string(),
-                    description: "Enterprise development".to_string(),
-                },
-                types::ModelInfo {
-                    id: "codellama-34b-max".to_string(),
-                    name: "Codellama-34B".to_string(),
-                    description: "Full-stack capabilities".to_string(),
-                },
-                types::ModelInfo {
-                    id: "flux-creative".to_string(),
-                    name: "FLUX bf16/fp16".to_string(),
-                    description: "4K+ image generation*".to_string(),
-                },
-                types::ModelInfo {
-                    id: "seedance-1080p".to_string(),
-                    name: "Seedance 1080p".to_string(),
-                    description: "Video generation*".to_string(),
-                },
-                types::ModelInfo {
-                    id: "hunyuan-avatar".to_string(),
-                    name: "HunyuanVideo-Avatar".to_string(),
-                    description: "Avatar creation".to_string(),
-                },
-                types::ModelInfo {
-                    id: "medgemma-9b".to_string(),
-                    name: "MedGemma-9B".to_string(),
-                    description: "Medical analysis*".to_string(),
-                },
-                types::ModelInfo {
-                    id: "qwen2.5-vl-7b".to_string(),
-                    name: "Qwen2.5-VL-7B".to_string(),
-                    description: "Vision language understanding".to_string(),
-                },
-
-            ],
-        ),
-        _ => (
-            "mistral-nemo-12b".to_string(),
-            vec![]
-        )
+        available_models,
     }
 }
 

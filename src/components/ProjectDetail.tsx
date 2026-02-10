@@ -9,34 +9,33 @@ import type { FileData } from "../types";
 import { ArrowLeft, FileUp, File, X, Send, Plus } from "lucide-react";
 
 export function ProjectDetail() {
-  const { 
-    currentProject, 
-    clearCurrentProject, 
-    loadProjectFiles, 
-    projectFiles, 
+  const {
+    currentProject,
+    clearCurrentProject,
+    loadProjectFiles,
+    projectFiles,
     uploadFilesToProject,
     deleteProjectFile,
-    isUploading
+    isUploading,
   } = useProjectStore();
-  const { 
-    messages, 
-    isSending, 
-    sendMessage, 
+  const {
+    messages,
+    isSending,
+    sendMessage,
     setCurrentProjectId,
     setMessages,
     createNewChat,
     chatHistory,
-    loadChat
+    loadChat,
   } = useChatStore();
-  const { 
-    currentModel,
+  const {
+    currentModelPath: currentModel,
     ragEnabled,
     webSearchEnabled,
-    agentModeEnabled,
-    sourceProfileEnabled
+    sourceProfileEnabled,
   } = useAppStore();
   const { showNotification } = useUIStore();
-  
+
   const chatMessagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -45,11 +44,12 @@ export function ProjectDetail() {
     if (currentProject) {
       loadProjectFiles(currentProject.id);
       setCurrentProjectId(currentProject.id);
-      
+
       // Load the most recent chat for this project, or create a new one
-      const projectChats = chatHistory.filter(c => c.projectId === currentProject.id)
+      const projectChats = chatHistory
+        .filter((c) => c.projectId === currentProject.id)
         .sort((a, b) => b.timestamp - a.timestamp);
-      
+
       if (projectChats.length > 0) {
         // Load the most recent chat
         loadChat(projectChats[0].id);
@@ -58,7 +58,7 @@ export function ProjectDetail() {
         createNewProjectChat();
       }
     }
-    
+
     return () => {
       setCurrentProjectId(null);
     };
@@ -88,7 +88,6 @@ export function ProjectDetail() {
     await sendMessage(content, currentModel, {
       ragEnabled: ragEnabled,
       webSearchEnabled: webSearchEnabled,
-      agentModeEnabled: agentModeEnabled,
       userProfileEnabled: sourceProfileEnabled,
       projectIds: [currentProject.id],
     });
@@ -106,7 +105,7 @@ export function ProjectDetail() {
       reader.readAsDataURL(file);
       reader.onload = () => {
         const result = reader.result as string;
-        const base64 = result.split(',')[1];
+        const base64 = result.split(",")[1];
         resolve(base64);
       };
       reader.onerror = (error) => reject(error);
@@ -119,24 +118,24 @@ export function ProjectDetail() {
       const base64Data = await fileToBase64(file);
       fileDataList.push({
         name: file.name,
-        type: file.type || 'application/octet-stream',
+        type: file.type || "application/octet-stream",
         size: file.size,
         data: base64Data,
       });
     }
     await uploadFilesToProject(currentProject.id, fileDataList);
-    showNotification(`Uploaded ${files.length} files to project`, 'success');
+    showNotification(`Uploaded ${files.length} files to project`, "success");
   };
 
   const handleDeleteFile = async (fileId: string, projectId: string) => {
     try {
       const success = await deleteProjectFile(fileId, projectId);
       if (success) {
-        showNotification('File deleted', 'success');
+        showNotification("File deleted", "success");
       }
     } catch (error) {
-      console.error('Failed to delete file:', error);
-      showNotification('Failed to delete file', 'error');
+      console.error("Failed to delete file:", error);
+      showNotification("Failed to delete file", "error");
     }
   };
 
@@ -150,18 +149,18 @@ export function ProjectDetail() {
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
     const dateStr = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear().toString().substring(2)}`;
-    const timeStr = date.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit', 
-        hour12: true 
+    const timeStr = date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
     });
     return `${dateStr} ${timeStr}`;
   };
@@ -170,7 +169,7 @@ export function ProjectDetail() {
     <div className="flex-1 flex flex-col h-full bg-bg-primary overflow-hidden">
       {/* Header */}
       <div className="flex items-center p-4 border-b border-border bg-bg-primary shrink-0">
-        <button 
+        <button
           className="flex items-center gap-2 bg-transparent border-none text-text-secondary cursor-pointer hover:text-text-primary transition-colors text-sm font-medium"
           onClick={handleBack}
         >
@@ -178,74 +177,97 @@ export function ProjectDetail() {
           Back to Projects
         </button>
         <div className="flex-1 text-center ">
-            <h2 className="text-lg font-semibold text-brand m-0">{currentProject.name}</h2>
+          <h2 className="text-lg font-semibold text-brand m-0">
+            {currentProject.name}
+          </h2>
         </div>
         <button
-            className='px-3 py-2.5 bg-transparent border-none rounded-lg cursor-pointer transition-all duration-200 hover:bg-hover-bg hover:text-text-primary'
-            onClick={() => createNewProjectChat()}
-          >
-            <Plus size={16} className="ml-auto text-gray-500 transition-colors duration-200 group-hover:text-gray-400 shrink-0" />
+          className="px-3 py-2.5 bg-transparent border-none rounded-lg cursor-pointer transition-all duration-200 hover:bg-hover-bg hover:text-text-primary"
+          onClick={() => createNewProjectChat()}
+        >
+          <Plus
+            size={16}
+            className="ml-auto text-gray-500 transition-colors duration-200 group-hover:text-gray-400 shrink-0"
+          />
         </button>
-
       </div>
 
       <div className="flex-1 flex min-h-0">
         {/* Files Column */}
         <div className="w-75 border-r border-border bg-bg-primary flex flex-col min-w-62.5 shrink-0">
           <div className="p-4 border-b border-border">
-            <h3 className="text-sm font-semibold text-text-primary m-0 mb-3">Project Files</h3>
-            <div 
-              className={`border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer transition-all hover:border-accent hover:bg-bg-tertiary ${isDragging ? 'border-accent bg-bg-tertiary' : ''}`}
-              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            <h3 className="text-sm font-semibold text-text-primary m-0 mb-3">
+              Project Files
+            </h3>
+            <div
+              className={`border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer transition-all hover:border-accent hover:bg-bg-tertiary ${isDragging ? "border-accent bg-bg-tertiary" : ""}`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
-              onClick={() => document.getElementById('projectFileInput')?.click()}
+              onClick={() =>
+                document.getElementById("projectFileInput")?.click()
+              }
             >
               <FileUp size={32} className="mx-auto mb-2 text-text-muted" />
-              <p className="text-xs text-text-muted m-0 font-medium">Drop files to upload</p>
-              <input 
-                  type="file" 
-                  id="projectFileInput" 
-                  multiple 
-                  className="hidden" 
-                  onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      if (files.length > 0) handleFileUpload(files);
-                  }}
+              <p className="text-xs text-text-muted m-0 font-medium">
+                Drop files to upload
+              </p>
+              <input
+                type="file"
+                id="projectFileInput"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (files.length > 0) handleFileUpload(files);
+                }}
               />
             </div>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
             {isUploading && (
               <div className="flex items-center gap-3 p-3 bg-bg-tertiary rounded-lg opacity-70">
                 <div className="w-4 h-4 border-2 border-border border-t-accent rounded-full animate-spin"></div>
-                <span className="text-xs text-text-secondary">Uploading files...</span>
+                <span className="text-xs text-text-secondary">
+                  Uploading files...
+                </span>
               </div>
             )}
             {projectFiles.map((file) => (
-              <div key={file.id} className="bg-bg-primary border border-border rounded-lg p-3 group relative hover:border-accent transition-colors">
+              <div
+                key={file.id}
+                className="bg-bg-primary border border-border rounded-lg p-3 group relative hover:border-accent transition-colors"
+              >
                 <div className="flex items-start gap-3">
-                    <div className="text-accent-primary shrink-0 mt-0.5">
-                        <File size={16} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <div className="text-xs font-medium text-text-primary truncate mb-1" title={file.name}>{file.name}</div>
-                        <div className="text-[10px] text-text-muted flex items-center gap-1">
-                            <span>{formatDate(file.uploadedAt)}</span>
-                            <span>• {formatFileSize(file.size)}</span>
-                        </div>
-                    </div>
-                    <button 
-                      className="opacity-0 group-hover:opacity-100 absolute top-2 right-2 p-1 text-text-muted hover:text-red-400 hover:bg-hover-bg rounded transition-all" 
-                      title="Delete file"
-                      onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteFile(file.id, currentProject?.id);
-                      }}
+                  <div className="text-accent-primary shrink-0 mt-0.5">
+                    <File size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className="text-xs font-medium text-text-primary truncate mb-1"
+                      title={file.name}
                     >
-                        <X size={14} />
-                    </button>
+                      {file.name}
+                    </div>
+                    <div className="text-[10px] text-text-muted flex items-center gap-1">
+                      <span>{formatDate(file.uploadedAt)}</span>
+                      <span>• {formatFileSize(file.size)}</span>
+                    </div>
+                  </div>
+                  <button
+                    className="opacity-0 group-hover:opacity-100 absolute top-2 right-2 p-1 text-text-muted hover:text-red-400 hover:bg-hover-bg rounded transition-all"
+                    title="Delete file"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteFile(file.id, currentProject?.id);
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
               </div>
             ))}
@@ -259,50 +281,58 @@ export function ProjectDetail() {
 
         {/* Chat Column */}
         <div className="flex-1 flex flex-col min-w-0 bg-bg-primary relative">
-            <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-6" id="projectChatMessages">
-                {messages.map((msg, index) => (
-                    <Message key={index} message={msg} isLast={index === messages.length - 1} />
-                ))}
-                {isSending && (
-                    <div className="flex justify-start relative w-full">
-                        <div className="w-8 h-8 rounded-full bg-accent mr-3 mt-1 flex items-center justify-center shrink-0">
-                            <span className="text-white text-xs">AI</span> {/* Placeholder avatar if needed */}
-                        </div>
-                        <div className="bg-bg-secondary border border-border rounded-lg p-4 rounded-bl-sm">
-                            <div className="flex items-center gap-1 py-1">
-                                <span className="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce"></span>
-                                <span className="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                                <span className="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce [animation-delay:0.4s]"></span>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                <div ref={chatMessagesEndRef} />
-            </div>
-
-            {/* Chat Input Area */}
-            <div className="p-4 border-t border-border bg-bg-primary">
-                <div className="max-w-4xl mx-auto relative bg-bg-secondary/30 border border-border rounded-xl p-3 focus-within:ring-1 focus-within:ring-bg-input transition-all">
-                    <input
-                        type="text"
-                        ref={chatInputRef}
-                        className="w-full bg-transparent border-none text-text-primary text-base outline-none placeholder:text-text-muted mb-2"
-                        placeholder="What do you want to know about this Project?"
-                        onKeyDown={handleKeyDown}
-                        disabled={isSending}
-                    />
-                    <div className="flex items-center justify-end gap-3">
-                        <ModelSelector />
-                        <button 
-                            className={`w-8 h-8 flex items-center justify-center bg-text-primary text-bg-primary rounded-full transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${isSending ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                            onClick={handleSendMessage}
-                            disabled={isSending}
-                        >
-                             <Send size={16} />
-                        </button>
-                    </div>
+          <div
+            className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-6"
+            id="projectChatMessages"
+          >
+            {messages.map((msg, index) => (
+              <Message
+                key={index}
+                message={msg}
+                isLast={index === messages.length - 1}
+              />
+            ))}
+            {isSending && (
+              <div className="flex justify-start relative w-full">
+                <div className="w-8 h-8 rounded-full bg-accent mr-3 mt-1 flex items-center justify-center shrink-0">
+                  <span className="text-white text-xs">AI</span>{" "}
+                  {/* Placeholder avatar if needed */}
                 </div>
+                <div className="bg-bg-secondary border border-border rounded-lg p-4 rounded-bl-sm">
+                  <div className="flex items-center gap-1 py-1">
+                    <span className="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce"></span>
+                    <span className="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                    <span className="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={chatMessagesEndRef} />
+          </div>
+
+          {/* Chat Input Area */}
+          <div className="p-4 border-t border-border bg-bg-primary">
+            <div className="max-w-4xl mx-auto relative bg-bg-secondary/30 border border-border rounded-xl p-3 focus-within:ring-1 focus-within:ring-bg-input transition-all">
+              <input
+                type="text"
+                ref={chatInputRef}
+                className="w-full bg-transparent border-none text-text-primary text-base outline-none placeholder:text-text-muted mb-2"
+                placeholder="What do you want to know about this Project?"
+                onKeyDown={handleKeyDown}
+                disabled={isSending}
+              />
+              <div className="flex items-center justify-end gap-3">
+                <ModelSelector />
+                <button
+                  className={`w-8 h-8 flex items-center justify-center bg-text-primary text-bg-primary rounded-full transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${isSending ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+                  onClick={handleSendMessage}
+                  disabled={isSending}
+                >
+                  <Send size={16} />
+                </button>
+              </div>
             </div>
+          </div>
         </div>
       </div>
     </div>

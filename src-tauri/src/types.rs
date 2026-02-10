@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 pub struct QueryOptions {
     pub rag_enabled: bool,
     pub web_search_enabled: bool,
-    pub agent_mode_enabled: bool,
     pub project_ids: Option<Vec<String>>,
 }
 
@@ -30,14 +29,15 @@ pub struct QueryResponse {
 pub struct SystemTier {
     pub tier: String,
     pub default_model: String,
-    pub supported_models: Vec<ModelInfo>,
+    pub available_models: Vec<ModelInfo>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ModelInfo {
-    pub id: String,
+    pub model_path: String,
     pub name: String,
-    pub description: String,
+    pub size: String,
 }
 
 

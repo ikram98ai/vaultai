@@ -1,6 +1,6 @@
 pub(crate) mod commands;
 pub(crate) mod types;
-pub(crate) mod app_state;
+pub(crate) mod ai;
 
 // ============ App Entry Point ============
 
@@ -10,7 +10,6 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_sql::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
-        .manage(app_state::AppState::default())
         .invoke_handler(tauri::generate_handler![
             // Chat
 

@@ -215,7 +215,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   // Send a message and get AI response
   sendMessage: async (
     content: string,
-    model: string,
+    modelPath: string,
     options: QueryOptions,
   ) => {
     const {
@@ -281,7 +281,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         title,
         messages: get().messages, // Includes the user message
         timestamp: Date.now(),
-        model: model,
+        model: modelPath,
         pinned: false,
         projectId: currentProjectId || undefined,
       };
@@ -327,7 +327,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         content,
         systemPrompt,
         history,
-        model,
+        modelPath,
         options,
       );
 
@@ -336,7 +336,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           role: "assistant",
           content: response.content,
           timestamp: Date.now(),
-          model,
+          model: modelPath.split("/").pop() || modelPath,
           generationTime: response.generationTime,
           sources: response.sources,
         };

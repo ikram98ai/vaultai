@@ -53,10 +53,10 @@ export const sendQuery = (
   query: string, 
   systemPrompt: string,
   history: Message[],
-  model: string, 
+  modelPath: string, 
   options: QueryOptions,
 ): Promise<QueryResponse> => 
-  invoke<QueryResponse>("send_query", { query, history, systemPrompt, model, options });
+  invoke<QueryResponse>("send_query", { query, systemPrompt, history, modelPath, options });
 // ============ File Commands ============
 
 export const uploadFiles = async (files: FileData[], projectId?: string): Promise<UploadResult> => {

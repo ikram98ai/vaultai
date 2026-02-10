@@ -124,13 +124,13 @@ export interface GeneratedImage {
 export interface SystemTier {
   tier: string;
   defaultModel: string;
-  supportedModels: ModelInfo[];
+  availableModels: ModelInfo[];
 }
 
 export interface ModelInfo {
-  id: string;
+  modelPath: string;
   name: string;
-  description: string;
+  size: string;
 }
 
 // ============ Query Types ============
@@ -138,7 +138,6 @@ export interface ModelInfo {
 export interface QueryOptions {
   ragEnabled: boolean;
   webSearchEnabled: boolean;
-  agentModeEnabled: boolean;
   userProfileEnabled: boolean;
   projectIds?: string[];
 }
