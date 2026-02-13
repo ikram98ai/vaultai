@@ -1,25 +1,11 @@
 use crate::types;
 use sysinfo::System;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use crate::types::ModelInfo;
 use tauri::Manager;
-use anyhow::Result;
 
 
-pub fn get_dir_size<P: AsRef<Path>>(path: P) -> Result<u64> {
-    let mut size = 0;
-    for entry in fs::read_dir(path)? {
-        let entry = entry?;
-        let metadata = entry.metadata()?;
-        if metadata.is_dir() {
-            size += get_dir_size(entry.path())?;
-        } else {
-            size += metadata.len();
-        }
-    }
-    Ok(size)
-}
 
 pub fn format_size(size: u64) -> String {
     const KB: u64 = 1024;
@@ -37,31 +23,25 @@ pub fn format_size(size: u64) -> String {
     }
 }
 
-pub fn get_available_models(app_handle: Option<&tauri::AppHandle>) -> Vec<ModelInfo> {
+pub fn get_available_models(models_path: &PathBuf) -> Vec<ModelInfo> {
     let mut models = Vec::new();
     
-    // Try to get models from the app resource directory
-    let models_path = if let Some(app) = app_handle {
-        app.path().resolve("_up_/models", tauri::path::BaseDirectory::Resource)
-            .unwrap_or_else(|_| PathBuf::from("../models"))
-    } else {
-        PathBuf::from("../models")
-    };
-    
+
+    // read dir recursively to look for model in models and models/image dir for .llamafiles
     if let Ok(entries) = fs::read_dir(&models_path) {
         for entry in entries.flatten() {
+
             if let Ok(metadata) = entry.metadata() {
-                if metadata.is_dir() {
-                    let dir_path = entry.path();
-                    let dir_name = entry.file_name();
-                    let model_id = dir_name.to_string_lossy().to_string();
-                    
-                    let size = get_dir_size(&dir_path).unwrap_or(0);
+                if metadata.is_file(){
+                    let file_path = entry.path();
+                    let file_name = entry.file_name().to_string_lossy().to_string();
+                    let display_name = file_name.split(".llamafile").next().unwrap_or(&file_name).to_string();
+                    let model_path = models_path.join(file_path).to_string_lossy().to_string();
                     
                     models.push(ModelInfo {
-                        name: model_id.clone(),
-                        model_path: models_path.join(&model_id).to_string_lossy().to_string(),
-                        size: format_size(size),
+                        name: display_name,
+                        model_path,
+                        size: format_size(metadata.len()),
                     });
                 }
             }
@@ -91,13 +71,23 @@ pub fn get_system_tier(app: tauri::AppHandle) -> types::SystemTier {
         "max".to_string()
     };
 
+    // Try to get models from the app resource directory
+    let models_path = app.path()
+        .resolve("../models", tauri::path::BaseDirectory::Resource)
+        .unwrap_or_else(|_| {
+            let mut path = std::env::current_dir().unwrap_or_default();
+            path.push("../models");
+            path
+        });
+ 
+    
     // Get available models from directory
-    let available_models = get_available_models(Some(&app));
+    let available_models = get_available_models(&models_path);
     
     // Use first available model as default, fallback to hardcoded default
     let default_model = available_models.first()
         .map(|m| m.model_path.clone())
-        .unwrap_or_else(|| "gemma-3-270m-it".to_string());
+        .unwrap_or_else(|| "../models/llama3.2-1b.llamafile".to_string());
 
     types::SystemTier {
         tier,

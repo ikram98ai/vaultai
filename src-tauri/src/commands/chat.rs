@@ -1,7 +1,7 @@
 use crate::types;
-use crate::ai::textgen;
 use anyhow::Result;
-
+use reqwest::Client;
+use serde_json::json;
 
 fn build_prompt(
     query: &str,
@@ -27,6 +27,69 @@ fn build_prompt(
     )
 }
 
+fn strip_think_tags(content: String) -> String {
+    let mut result = String::new();
+    let mut current = content.as_str();
+
+    while let Some(start_idx) = current.find("<think>") {
+        result.push_str(&current[..start_idx]);
+        if let Some(end_idx) = current[start_idx..].find("</think>") {
+            // Move current past the </think> tag
+            current = &current[start_idx + end_idx + "</think>".len()..];
+        } else {
+            // If there's a <think> but no </think>, we strip everything after the tag
+            current = "";
+            break;
+        }
+    }
+    result.push_str(current);
+    result.trim().to_string().replace("<|eot_id|>", "")
+}
+
+async fn generate(
+    prompt: String,
+    system_prompt: String,
+    history: &Vec<types::ChatMessage>,
+) -> Result<String, anyhow::Error> {
+    let client = Client::new();
+    let url = "http://localhost:8080/v1/chat/completions";
+
+    // Build messages array from system + history + current user prompt
+    let mut messages = Vec::new();
+    messages.push(json!({"role": "system", "content": system_prompt}));
+    for m in history.iter() {
+        messages.push(json!({"role": m.role, "content": m.content}));
+    }
+    messages.push(json!({"role": "user", "content": prompt}));
+
+    // Prepare the payload
+    let payload = json!({
+        "messages": messages,
+        "temperature": 0.7,
+        "stream": false
+    });
+
+    // Send the request
+    let response = client
+        .post(url)
+        .json(&payload)
+        .send()
+        .await?;
+
+    let response_json: serde_json::Value = response.json().await?;
+    
+    // Extract the assistant content if present
+    let content = response_json["choices"][0]["message"]["content"]
+        .as_str()
+        .ok_or_else(|| anyhow::anyhow!("Unexpected response format from llama.cpp: {:?}", response_json))?
+        .to_string();
+
+    println!("Response: {}", content);
+
+    let cleaned_content = strip_think_tags(content);
+
+    Ok(cleaned_content)
+}
 
 
 #[tauri::command]
@@ -34,14 +97,10 @@ pub async fn send_query(
     query: String,
     system_prompt: String,
     history: Vec<types::ChatMessage>,
-    model_path: String,
     options: types::QueryOptions,
 ) -> Result<types::QueryResponse, String> {
 
     let generation_time = std::time::Instant::now();
-
-    println!("Model path: {}", model_path);
-    println!("User query: {}\nSystem prompt: {}", query, system_prompt);
 
     let mut context = String::new();
     if options.rag_enabled {
@@ -56,22 +115,11 @@ pub async fn send_query(
 
     let prompt = build_prompt(&query, &context, &options);
 
-
-    let mut messages = vec![types::ChatMessage {
-        role: "system".to_string(),
-        content: system_prompt, 
-    }];
-    messages.extend(history);
-    messages.push(types::ChatMessage {
-        role: "user".to_string(),
-        content: prompt,
-    });
-
-    let response_content = textgen::generate(messages, model_path);
+    let content_result = generate(prompt, system_prompt, &history).await;
 
     let generation_duration = generation_time.elapsed();
-    
-    match response_content {
+
+    match content_result {
         Ok(content) => Ok(types::QueryResponse {
             success: true,
             content: Some(content),

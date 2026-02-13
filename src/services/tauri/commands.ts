@@ -53,10 +53,9 @@ export const sendQuery = (
   query: string, 
   systemPrompt: string,
   history: Message[],
-  modelPath: string, 
   options: QueryOptions,
 ): Promise<QueryResponse> => 
-  invoke<QueryResponse>("send_query", { query, systemPrompt, history, modelPath, options });
+  invoke<QueryResponse>("send_query", { query, systemPrompt, history, options });
 // ============ File Commands ============
 
 export const uploadFiles = async (files: FileData[], projectId?: string): Promise<UploadResult> => {
@@ -145,6 +144,15 @@ export const getMemoryUsage = (): Promise<{
   percentage: number 
 }> => 
   invoke("get_memory_usage");
+
+
+// ============ Llamafile Commands ============
+
+export const startLlamafile = (modelPath: string): Promise<boolean> => 
+  invoke("start_llamafile", { modelPath });
+
+export const getRunningModel = (): Promise<string | null> => 
+  invoke("get_running_model");
 
 // ============ Prompt Commands ============
 

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { ModelInfo, UserProfile } from "../types";
-import { getSystemTier, getMemoryUsage } from "../services/tauri/commands";
+import { getSystemTier, getMemoryUsage, startLlamafile, getRunningModel } from "../services/tauri/commands";
 
 interface AppState {
   // Model state
@@ -13,6 +13,7 @@ interface AppState {
     total: number;
     percentage: number;
   } | null;
+  isModelLoading: boolean;
 
   // Feature toggles
   ragEnabled: boolean;
@@ -58,6 +59,7 @@ export const useAppStore = create<AppState>()(
       systemTier: "lite",
       availableModels: [],
       memoryUsage: null,
+      isModelLoading: false,
       ragEnabled: true,
       webSearchEnabled: true,
       sourceWebEnabled: true,
@@ -68,7 +70,22 @@ export const useAppStore = create<AppState>()(
 
       // Actions
       setTheme: (theme) => set({ theme }),
-      setCurrentModelPath: (modelPath) => set({ currentModelPath: modelPath }),
+      setCurrentModelPath: async (modelPath) => {
+        set({ currentModelPath: modelPath });
+
+        // Handle llamafile lifecycle
+        if (modelPath.endsWith(".llamafile")) {
+          set({ isModelLoading: true });
+          try {
+            await startLlamafile(modelPath);
+          } catch (e) {
+            console.error("Failed to start llamafile:", e);
+          } finally {
+            set({ isModelLoading: false });
+          }
+        } 
+     
+      },
       setSystemTier: (tier) => set({ systemTier: tier }),
       setRagEnabled: (enabled) => set({ ragEnabled: enabled }),
       setWebSearchEnabled: (enabled) => set({ webSearchEnabled: enabled }),
@@ -97,11 +114,30 @@ export const useAppStore = create<AppState>()(
         try {
           const { tier, defaultModel, availableModels } = await getSystemTier();
           const { currentModelPath: currentModel } = get();
+          
+          const finalModelPath = currentModel || defaultModel;
+
           set({
             systemTier: tier as any,
-            currentModelPath: currentModel || defaultModel,
+            currentModelPath: finalModelPath,
             availableModels: availableModels,
           });
+
+          // Handle llamafile lifecycle on startup
+          if (finalModelPath.endsWith(".llamafile")) {
+            const runningModel = await getRunningModel();
+            if (runningModel !== finalModelPath) {
+              set({ isModelLoading: true });
+              try {
+                await startLlamafile(finalModelPath);
+              } catch (e) {
+                console.error("Failed to start llamafile on startup:", e);
+              } finally {
+                set({ isModelLoading: false });
+              }
+            }
+          }
+
           // Also fetch memory usage
           const memory = await getMemoryUsage();
           set({ memoryUsage: memory });

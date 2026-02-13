@@ -11,6 +11,7 @@ export function ModelSelector() {
     availableModels,
     memoryUsage,
     refreshMemoryUsage,
+    isModelLoading,
   } = useAppStore();
 
   useEffect(() => {
@@ -39,15 +40,14 @@ export function ModelSelector() {
           <div className="px-3 py-2 mb-2 border-b border-border flex items-center justify-between text-xs text-text-muted">
             <div className="flex items-center gap-1.5">
               <Cpu size={12} />
-              <span>Available RAM</span>
+              <span>RAM</span>
             </div>
             <span
               className={
                 memoryUsage.percentage > 90 ? "text-error" : "text-accent"
               }
             >
-              {formatRAM(memoryUsage.total - memoryUsage.used)} /{" "}
-              {formatRAM(memoryUsage.total)}
+              {formatRAM(memoryUsage.used)} / {formatRAM(memoryUsage.total)}
             </span>
           </div>
         )}
@@ -80,11 +80,15 @@ export function ModelSelector() {
       menuClassName="p-2 min-w-64 max-h-[80vh] overflow-y-auto shadow-2xl z-100"
       trigger={
         <button
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-transparent border border-border rounded-full text-text-secondary text-[13px] font-sans cursor-pointer transition-all hover:border-accent"
+          className={`flex items-center gap-1.5 px-3 py-1.5 bg-transparent border border-border rounded-full text-text-secondary text-[13px] font-sans cursor-pointer transition-all hover:border-accent ${isModelLoading ? "opacity-70 cursor-wait" : ""}`}
           id="modelSelectorBtn"
+          disabled={isModelLoading}
         >
+          {isModelLoading ? (
+            <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin mr-1" />
+          ) : null}
           <span className="font-thin text-xs">
-            {currentModelInfo?.name || "Select Model"}
+            {isModelLoading ? "Loading..." : (currentModelInfo?.name || "Select Model")}
           </span>
           <ChevronDown size={12} className="text-current" />
         </button>

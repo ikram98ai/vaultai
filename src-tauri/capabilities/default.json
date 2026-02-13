@@ -9,25 +9,51 @@
     "sql:default",
     "sql:allow-execute",
     "fs:default",
+    "shell:default",
+
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        { "name": "sh", "cmd": "sh", "args": [ { "validator": ".*" } ] }
+      ]
+    },
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        { "name": "sh", "cmd": "sh", "args": [ { "validator": ".*" } ] }
+      ]
+    },
     {
       "identifier": "fs:allow-mkdir",
-      "allow": [{ "path": "$APPDATA/**" }]
+      "allow": [
+        {"path": "$APPDATA/**" }
+      ]
     },
     {
       "identifier": "fs:allow-exists",
-      "allow": [{ "path": "$APPDATA/**" }, { "path": "$RESOURCE/**/*" }]
+      "allow": [
+        {"path": "$APPDATA/**" },
+        {"path": "$RESOURCE/**/*" }
+      ]
     },
     {
       "identifier": "fs:allow-read-file",
-      "allow": [{ "path": "$APPDATA/**" }, { "path": "$RESOURCE/**/*" }]
+      "allow": [
+        {"path": "$APPDATA/**" },
+        {"path": "$RESOURCE/**/*" }
+      ]
     },
     {
       "identifier": "fs:allow-write-file",
-      "allow": [{ "path": "$APPDATA/**" }]
+      "allow": [
+        {"path": "$APPDATA/**" }
+      ]
     },
     {
       "identifier": "fs:allow-remove",
-      "allow": [{ "path": "$APPDATA/**" }]
+      "allow": [
+        {"path": "$APPDATA/**" }
+      ]
     }
   ]
 }

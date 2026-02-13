@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { Chat, Message, QueryOptions } from "../types";
 import * as commands from "../services/tauri/commands";
-import { buildProfileContext, buildProjectContext, buildSystemPrompt } from "./uitls";
+import { buildProfileContext, buildProjectContext, buildSystemPrompt } from "./promptUitls";
 
 interface ChatState {
   // Current chat state
@@ -327,7 +327,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
         content,
         systemPrompt,
         history,
-        modelPath,
         options,
       );
 
