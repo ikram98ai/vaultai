@@ -1,14 +1,14 @@
-use super::{RagSystem, DENSE_VECTOR_NAME, SPARSE_VECTOR_NAME};
-use qdrant_client::qdrant::{
-    QueryPointsBuilder, PrefetchQueryBuilder, Filter, Fusion, Query,
-};
+use super::{RagSystem};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use lancedb::query::{ExecutableQuery, QueryBase};
+use arrow_array::{RecordBatch, StringArray, Float32Array};
+use futures::StreamExt;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchResult {
     pub content: String,
-    pub metadata: serde_json::Value,
+    pub source: String,
     pub score: f32,
     pub id: String,
     pub collection: String,
@@ -18,80 +18,67 @@ impl RagSystem {
     pub async fn search_collection(
         &self,
         query_text: &str,
-        collection_name: &str,
+        table_name: &str,
         n_results: u64,
-        _metadata_filter: Option<Filter>,
     ) -> Result<Vec<SearchResult>> {
-        if !self.qdrant_client.collection_exists(collection_name).await? {
+        let table_names = self.lancedb_conn.table_names().execute().await?;
+        if !table_names.contains(&table_name.to_string()) {
             return Ok(vec![]);
         }
 
-        let (dense, sparse) = self.generate_vectors(query_text).await?;
+        let table = self.lancedb_conn.open_table(table_name).execute().await?;
+        let dense = self.generate_vectors(query_text).await?;
 
-        let mut query_builder = QueryPointsBuilder::new(collection_name)
-            .limit(n_results)
-            .with_payload(true);
+        let query = table.vector_search(dense)
+            .map_err(|e| anyhow::anyhow!("Search error: {}", e))?
+            .limit(n_results as usize);
 
-        // Add dense prefetch
-        query_builder = query_builder.add_prefetch(
-            PrefetchQueryBuilder::default()
-                .query(Query::from(dense))
-                .using(DENSE_VECTOR_NAME)
-                .limit(n_results * 2)
-        );
-
-        // Add sparse prefetch
-        let sparse_vector: Vec<(u32, f32)> = sparse.indices.iter()
-            .zip(sparse.values.iter())
-            .map(|(&i, &v)| (i as u32, v))
-            .collect();
-            
-        query_builder = query_builder.add_prefetch(
-            PrefetchQueryBuilder::default()
-                .query(Query::from(sparse_vector))
-                .using(SPARSE_VECTOR_NAME)
-                .limit(n_results * 2)
-        );
-
-        // Use Fusion to combine the prefetches
-        query_builder = query_builder.query(Query::from(Fusion::Rrf));
-
-        let response = self.qdrant_client.query(query_builder).await?;
-
+        let mut stream = query.execute().await?;
         let mut results = Vec::new();
-        for point in response.result {
-            let payload = point.payload;
-            let content = payload.get("text")
-                .and_then(|v| {
-                    if let Some(qdrant_client::qdrant::value::Kind::StringValue(s)) = &v.kind {
-                        Some(s.clone())
-                    } else {
-                        None
-                    }
-                })
-                .unwrap_or_default();
-            
-            let mut metadata = serde_json::Map::new();
-            for (k, v) in payload {
-                if k != "text" {
-                    metadata.insert(k, json_from_qdrant_value(v));
-                }
-            }
 
-            let id_str = match point.id {
-                Some(id) => match id.point_id_options {
-                    Some(qdrant_client::qdrant::point_id::PointIdOptions::Num(n)) => n.to_string(),
-                    Some(qdrant_client::qdrant::point_id::PointIdOptions::Uuid(s)) => s,
-                    None => "".to_string(),
-                },
-                None => "".to_string(),
-            };
+        while let Some(batch_result) = stream.next().await {
+            let batch = batch_result?;
+            results.extend(self.process_batch(batch, table_name)?);
+        }
+
+        Ok(results)
+    }
+
+    fn process_batch(&self, batch: RecordBatch, collection_name: &str) -> Result<Vec<SearchResult>> {
+        let mut results = Vec::new();
+        
+        let texts = batch.column_by_name("text")
+            .ok_or_else(|| anyhow::anyhow!("text column not found"))?
+            .as_any().downcast_ref::<StringArray>()
+            .ok_or_else(|| anyhow::anyhow!("text column is not StringArray"))?;
+            
+        let ids = batch.column_by_name("id")
+            .ok_or_else(|| anyhow::anyhow!("id column not found"))?
+            .as_any().downcast_ref::<StringArray>()
+            .ok_or_else(|| anyhow::anyhow!("id column is not StringArray"))?;
+
+        let source = batch.column_by_name("source")
+            .ok_or_else(|| anyhow::anyhow!("source column not found"))?
+            .as_any().downcast_ref::<StringArray>()
+            .ok_or_else(|| anyhow::anyhow!("source column is not StringArray"))?;
+
+        // LanceDB search result batch usually includes a "_distance" column
+        let scores = batch.column_by_name("_distance")
+            .and_then(|c| c.as_any().downcast_ref::<Float32Array>());
+
+        for i in 0..batch.num_rows() {
+            let content = texts.value(i).to_string();
+            let id = ids.value(i).to_string();
+            let source = source.value(i).to_string();
+            
+            // Vector distance to score conversion (simplified: 1 / (1 + distance))
+            let score = scores.map(|s| 1.0 / (1.0 + s.value(i))).unwrap_or(0.0);
 
             results.push(SearchResult {
                 content,
-                metadata: serde_json::Value::Object(metadata),
-                score: point.score,
-                id: id_str,
+                score,
+                id,
+                source,
                 collection: collection_name.to_string(),
             });
         }
@@ -103,25 +90,27 @@ impl RagSystem {
         &self,
         query_text: &str,
         n_results: u64,
-        project_slugs: Vec<String>,
+        project_ids: Vec<String>,
     ) -> Result<Vec<SearchResult>> {
-        let mut collections_to_search = Vec::new();
-        if project_slugs.is_empty() {
-            let collections = self.qdrant_client.list_collections().await?;
-            for col in collections.collections {
-                collections_to_search.push(col.name);
-            }
+        let mut tables_to_search = Vec::new();
+        let all_tables = self.lancedb_conn.table_names().execute().await?;
+
+        if project_ids.is_empty() {
+            tables_to_search = all_tables;
         } else {
-            for slug in project_slugs {
-                collections_to_search.push(Self::get_collection_name(Some(&slug), None));
+            for id in project_ids {
+                let table_name = Self::get_collection_name(Some(&id), None);
+                if all_tables.contains(&table_name) {
+                    tables_to_search.push(table_name);
+                }
             }
         }
 
         let mut all_results = Vec::new();
-        for col in collections_to_search {
-            match self.search_collection(query_text, &col, n_results, None).await {
+        for table in tables_to_search {
+            match self.search_collection(query_text, &table, n_results).await {
                 Ok(mut results) => all_results.append(&mut results),
-                Err(e) => println!("Error searching collection {}: {}", col, e),
+                Err(e) => println!("Error searching table {}: {}", table, e),
             }
         }
 
@@ -129,28 +118,5 @@ impl RagSystem {
         all_results.truncate(n_results as usize);
 
         Ok(all_results)
-    }
-}
-
-fn json_from_qdrant_value(value: qdrant_client::qdrant::Value) -> serde_json::Value {
-    use qdrant_client::qdrant::value::Kind;
-    match value.kind {
-        Some(Kind::NullValue(_)) => serde_json::Value::Null,
-        Some(Kind::DoubleValue(n)) => serde_json::json!(n),
-        Some(Kind::IntegerValue(n)) => serde_json::json!(n),
-        Some(Kind::StringValue(s)) => serde_json::json!(s),
-        Some(Kind::BoolValue(b)) => serde_json::json!(b),
-        Some(Kind::StructValue(s)) => {
-            let mut map = serde_json::Map::new();
-            for (k, v) in s.fields {
-                map.insert(k, json_from_qdrant_value(v));
-            }
-            serde_json::Value::Object(map)
-        }
-        Some(Kind::ListValue(l)) => {
-            let vec = l.values.into_iter().map(json_from_qdrant_value).collect();
-            serde_json::Value::Array(vec)
-        }
-        None => serde_json::Value::Null,
     }
 }

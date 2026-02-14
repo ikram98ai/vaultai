@@ -98,7 +98,7 @@ export function ChatContainer() {
           {/* Typing indicator when sending */}
           {isSending && (
             <div className="flex justify-start relative w-full">
-               <div className="w-8 h-8 rounded-full bg-accent mr-3 mt-1 flex items-center justify-center shrink-0">
+               <div className="w-8 h-8 rounded-full mr-3 mt-1 flex items-center justify-center shrink-0">
                 <img src={logoicon} alt="VaultAI Logo" className="h-4 w-4 fill-bg-primary" />
               </div>
               <div className="bg-bg-secondary border border-border rounded-lg p-4 rounded-bl-sm">

@@ -18,14 +18,19 @@
         .container { 
             text-align: center; 
             padding: 40px;
-            max-width: 600px;
+            width: 500px;
+            height: 450px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .logo-container {
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 16px;
+            flex-shrink: 0;
         }
         .logo-svg {
             width: 185px;
@@ -35,54 +40,73 @@
             fill: #FFBA08;
         }
         .spinner {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             border: 4px solid rgba(255,255,255,0.1);
             border-top-color: #FFBA08;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto 30px;
+            flex-shrink: 0;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .status-area {
+            height: 120px; /* Reserved space for status + progress + details */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
         .status {
             font-size: 18px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             font-weight: 600;
-            min-height: 24px;
+            height: 24px;
+            line-height: 24px;
             color: #f9f8f6;
-        }
-        .detail {
-            font-size: 14px;
-            opacity: 0.7;
-            margin-bottom: 30px;
-            min-height: 20px;
-            display: none;
-            color: #8b949e;
-        }
-        .tip {
-            font-size: 13px;
-            color: #8b949e;
-            font-style: italic;
-            padding: 15px;
-            border-top: 1px solid #333436;
-            margin-top: 30px;
-            min-height: 60px;
-            transition: opacity 0.5s;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
         }
         .progress-bar {
             width: 100%;
             height: 4px;
             background: rgba(255,255,255,0.1);
             border-radius: 2px;
-            margin: 20px 0;
+            margin-bottom: 12px;
             overflow: hidden;
+            flex-shrink: 0;
         }
         .progress-fill {
             height: 100%;
             background: #FFBA08;
             width: 0%;
             transition: width 0.3s ease;
-            animation: pulse 2s ease-in-out infinite;
+        }
+        .detail {
+            font-size: 14px;
+            opacity: 0.7;
+            height: 40px;
+            line-height: 20px;
+            color: #8b949e;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        .tip-area {
+            height: 80px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-top: 1px solid #333436;
+        }
+        .tip {
+            font-size: 13px;
+            color: #8b949e;
+            font-style: italic;
+            padding: 10px;
+            transition: opacity 0.5s;
         }
         @keyframes pulse {
             0%, 100% { opacity: 1; }
@@ -100,12 +124,16 @@
             </svg>
         </div>
         <div class="spinner"></div>
-        <div class="status" data-status>Starting VaultAI...</div>
-        <div class="progress-bar">
-            <div class="progress-fill" data-progress></div>
+        <div class="status-area">
+            <div class="status" data-status>Starting VaultAI...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" data-progress></div>
+            </div>
+            <div class="detail" data-details>Initializing services...</div>
         </div>
-        <div class="detail" data-details>Initializing services...</div>
-        <div class="tip" data-tip>💡 VaultAI runs completely offline - your data never leaves your machine</div>
+        <div class="tip-area">
+            <div class="tip" data-tip>💡 VaultAI runs completely offline - your data never leaves your machine</div>
+        </div>
     </div>
     
     <script>
@@ -122,6 +150,9 @@
         
         let currentTip = 0;
         const tipElement = document.querySelector('[data-tip]');
+        const statusElement = document.querySelector('[data-status]');
+        const detailsElement = document.querySelector('[data-details]');
+        const progressFill = document.querySelector('[data-progress]');
         
         // Rotate tips every 5 seconds
         setInterval(() => {
@@ -132,16 +163,31 @@
                 tipElement.style.opacity = '0.5';
             }, 500);
         }, 5000);
-        
-        // Animate progress bar (indeterminate)
-        const progressFill = document.querySelector('[data-progress]');
-        let progress = 0;
-        setInterval(() => {
-            progress = (progress + 2) % 100;
-            if (progress < 80) {
-                progressFill.style.width = progress + '%';
+
+        // Tauri Integration
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const { invoke } = window.__TAURI__.core;
+                const { listen } = window.__TAURI__.event;
+
+                // Listen for progress events
+                await listen('init-progress', (event) => {
+                    const { status, details, progress } = event.payload;
+                    statusElement.textContent = status;
+                    detailsElement.textContent = details;
+                    progressFill.style.width = progress + '%';
+                });
+
+                // Start initialization
+                await invoke('initialize_application');
+            } catch (err) {
+                console.error('Failed to initialize:', err);
+                statusElement.textContent = 'Initialization Failed';
+                detailsElement.textContent = err.toString();
+                detailsElement.style.color = '#ef4444';
+                progressFill.style.backgroundColor = '#ef4444';
             }
-        }, 100);
+        });
     </script>
 </body>
 </html>

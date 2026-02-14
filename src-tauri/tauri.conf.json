@@ -17,14 +17,27 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "vaultai",
         "width": 1200,
-        "height": 800
+        "height": 800,
+        "visible": false
+      },
+      {
+        "label": "splashscreen",
+        "url": "splashscreen.html",
+        "width": 1200,
+        "height": 800,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "center": true
       }
     ],
     "security": {
       "csp": null
-    }
+    },
+    "withGlobalTauri": true
   },
   "bundle": {
     "resources": ["../models/"],

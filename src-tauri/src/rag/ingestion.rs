@@ -1,78 +1,82 @@
-use super::{RagSystem, DENSE_VECTOR_NAME, SPARSE_VECTOR_NAME};
-use qdrant_client::qdrant::{
-    CreateCollectionBuilder, Distance, VectorParamsBuilder, VectorsConfigBuilder,
-    SparseVectorParamsBuilder, SparseVectorsConfigBuilder, PointStruct, UpsertPointsBuilder,
-    NamedVectors, Vector,
+use super::{RagSystem};
+use lancedb::database::CreateTableMode;
+use arrow_array::{
+    FixedSizeListArray, Float32Array, RecordBatch, RecordBatchIterator, StringArray, Int32Array,
 };
-use qdrant_client::Payload;
-use serde_json::json;
+use arrow_schema::{DataType, Field, Schema};
 use anyhow::{Result};
 use chrono::Utc;
 use uuid::Uuid;
 use std::path::Path;
+use std::sync::Arc;
 
 impl RagSystem {
-    pub async fn ensure_collection_exists(&self, collection_name: &str) -> Result<()> {
-        if self.qdrant_client.collection_exists(collection_name).await? {
+    pub async fn ensure_table_exists(&self, table_name: &str, dim: usize) -> Result<()> {
+        let table_names = self.lancedb_conn.table_names().execute().await?;
+        if table_names.contains(&table_name.to_string()) {
             return Ok(());
         }
 
-        // Generate dummy vectors to get sizes
-        let (dense, _) = self.generate_vectors("Initialize").await?;
-        let dense_size = dense.len() as u64;
+        let schema = Arc::new(Schema::new(vec![
+            Field::new("id", DataType::Utf8, false),
+            Field::new("doc_id", DataType::Utf8, false),
+            Field::new("chunk_index", DataType::Int32, false),
+            Field::new("source", DataType::Utf8, false),
+            Field::new("text", DataType::Utf8, false),
+            Field::new(super::DENSE_VECTOR_NAME, DataType::FixedSizeList(Arc::new(Field::new("item", DataType::Float32, true)), dim as i32), false),
+            Field::new("project_id", DataType::Utf8, true),
+            Field::new("indexed_at", DataType::Utf8, false),
+        ]));
 
-        let mut vectors_config = VectorsConfigBuilder::default();
-        vectors_config.add_named_vector_params(
-            DENSE_VECTOR_NAME,
-            VectorParamsBuilder::new(dense_size, Distance::Cosine),
-        );
+        let batches = RecordBatchIterator::new(vec![Ok(RecordBatch::new_empty(schema.clone()))], schema);
 
-        let mut sparse_vectors_config = SparseVectorsConfigBuilder::default();
-        sparse_vectors_config.add_named_vector_params(
-            SPARSE_VECTOR_NAME,
-            SparseVectorParamsBuilder::default(),
-        );
-
-        self.qdrant_client
-            .create_collection(
-                CreateCollectionBuilder::new(collection_name)
-                    .vectors_config(vectors_config)
-                    .sparse_vectors_config(sparse_vectors_config)
-            )
+        self.lancedb_conn
+            .create_table(table_name, batches)
+            .mode(CreateTableMode::Overwrite)
+            .execute()
             .await?;
 
         Ok(())
     }
 
     pub fn chunk_text(text: &str, chunk_size: usize, overlap: usize) -> Vec<String> {
-        if text.len() <= chunk_size {
+        let chars: Vec<char> = text.chars().collect();
+        if chars.len() <= chunk_size {
             return vec![text.to_string()];
         }
 
         let mut chunks = Vec::new();
         let mut start = 0;
         
-        while start < text.len() {
-            let end = std::cmp::min(start + chunk_size, text.len());
-            let mut chunk = text[start..end].to_string();
+        while start < chars.len() {
+            let end = std::cmp::min(start + chunk_size, chars.len());
+            let mut chunk_chars = chars[start..end].to_vec();
             
-            // Try to snap to a newline or space to avoid cutting words
-            if end < text.len() {
-                if let Some(last_space) = chunk.rfind(|c: char| c.is_whitespace()) {
+            // Try to break at whitespace if not at the end of text
+            if end < chars.len() {
+                if let Some(last_space) = chunk_chars.iter().rposition(|c| c.is_whitespace()) {
+                    // Only truncate if the space is reasonably far into the chunk
                     if last_space > chunk_size / 2 {
-                        chunk.truncate(last_space);
+                        chunk_chars.truncate(last_space);
                     }
                 }
             }
             
-            let actual_chunk_len = chunk.len();
+            let actual_chunk_char_len = chunk_chars.len();
+            let chunk: String = chunk_chars.into_iter().collect();
             chunks.push(chunk);
             
-            if start + actual_chunk_len >= text.len() {
+            if start + actual_chunk_char_len >= chars.len() {
                 break;
             }
             
-            start += actual_chunk_len - std::cmp::min(overlap, actual_chunk_len);
+            let safe_overlap = std::cmp::min(overlap, actual_chunk_char_len);
+            start += actual_chunk_char_len - safe_overlap;
+            
+            // Safety: ensure we always progress even if chunking is weird
+            if actual_chunk_char_len == 0 {
+                start += 1;
+            }
         }
         
         chunks
@@ -87,57 +91,95 @@ impl RagSystem {
         doc_id: &str,
         text: &str,
         source: &str,
-        project_slug: Option<&str>,
-        metadata: Option<serde_json::Value>,
+        project_id: Option<&str>,
     ) -> Result<()> {
-        let collection_name = Self::get_collection_name(project_slug, Some(source));
-        self.ensure_collection_exists(&collection_name).await?;
-
-        // Split text into chunks (e.g., 1000 chars with 200 overlap)
+        println!("Indexing document: {} (source: {})", doc_id, source);
+        let table_name = Self::get_collection_name(project_id, Some(source));
+        
+        // Split text into chunks
         let chunks = Self::chunk_text(text, 1000, 200);
+        if chunks.is_empty() {
+            println!("No text to index for document: {}", doc_id);
+            return Ok(());
+        }
+        println!("Document split into {} chunks", chunks.len());
+
+        // Generate first vector to get dimension
+        let first_dense = self.generate_vectors(&chunks[0]).await?;
+        let dim = first_dense.len();
+
+        self.ensure_table_exists(&table_name, dim).await?;
+
+        let mut ids = Vec::new();
+        let mut doc_ids = Vec::new();
+        let mut chunk_indices = Vec::new();
+        let mut sources = Vec::new();
+        let mut texts = Vec::new();
+        let mut vectors = Vec::new();
+        let mut project_ids = Vec::new();
+        let mut indexed_ats = Vec::new();
 
         for (i, chunk) in chunks.iter().enumerate() {
-            let (dense, sparse) = self.generate_vectors(chunk).await?;
-
-            let mut payload_json = json!({
-                "doc_id": doc_id,
-                "chunk_index": i,
-                "source": source,
-                "text": chunk,
-                "indexed_at": Utc::now().to_rfc3339(),
-            });
-
-            if let Some(slug) = project_slug {
-                payload_json["project_slug"] = json!(slug);
+            if i % 100 == 0 && i > 0 {
+                println!("Processing chunk {}/{}...", i, chunks.len());
             }
+            let dense = self.generate_vectors(chunk).await?;
 
-            if let Some(meta) = metadata.as_ref() {
-                if let Some(obj) = meta.as_object() {
-                    for (k, v) in obj {
-                        payload_json[k] = v.clone();
-                    }
-                }
-            }
-
-            let sparse_indices: Vec<u32> = sparse.indices.iter().map(|&i| i as u32).collect();
-            let sparse_values: Vec<f32> = sparse.values;
-            
-            let vectors = NamedVectors::default()
-                .add_vector(DENSE_VECTOR_NAME, dense)
-                .add_vector(SPARSE_VECTOR_NAME, Vector::new_sparse(sparse_indices, sparse_values));
-
-            let payload: Payload = serde_json::from_value(payload_json)?;
-
-            let point = PointStruct::new(
-                Uuid::new_v4().to_string(),
-                vectors,
-                payload,
-            );
-
-            self.qdrant_client
-                .upsert_points(UpsertPointsBuilder::new(&collection_name, vec![point]))
-                .await?;
+            ids.push(Uuid::new_v4().to_string());
+            doc_ids.push(doc_id.to_string());
+            chunk_indices.push(i as i32);
+            sources.push(source.to_string());
+            texts.push(chunk.clone());
+            vectors.extend_from_slice(&dense);
+            project_ids.push(project_id.map(|s| s.to_string()));
+            indexed_ats.push(Utc::now().to_rfc3339());
         }
+
+        println!("Adding {} chunks to table {}", chunks.len(), table_name);
+
+        let schema = Arc::new(Schema::new(vec![
+            Field::new("id", DataType::Utf8, false),
+            Field::new("doc_id", DataType::Utf8, false),
+            Field::new("chunk_index", DataType::Int32, false),
+            Field::new("source", DataType::Utf8, false),
+            Field::new("text", DataType::Utf8, false),
+            Field::new(super::DENSE_VECTOR_NAME, DataType::FixedSizeList(Arc::new(Field::new("item", DataType::Float32, true)), dim as i32), false),
+            Field::new("project_id", DataType::Utf8, true),
+            Field::new("indexed_at", DataType::Utf8, false),
+        ]));
+
+        let id_array = StringArray::from(ids);
+        let doc_id_array = StringArray::from(doc_ids);
+        let chunk_index_array = Int32Array::from(chunk_indices);
+        let source_array = StringArray::from(sources);
+        let text_array = StringArray::from(texts);
+        let project_id_array = StringArray::from(project_ids);
+        let indexed_at_array = StringArray::from(indexed_ats);
+
+        let vector_values = Float32Array::from(vectors);
+        let vector_array = FixedSizeListArray::try_new(
+            Arc::new(Field::new("item", DataType::Float32, true)),
+            dim as i32,
+            Arc::new(vector_values),
+            None
+        )?;
+
+        let batch = RecordBatch::try_new(
+            schema.clone(),
+            vec![
+                Arc::new(id_array),
+                Arc::new(doc_id_array),
+                Arc::new(chunk_index_array),
+                Arc::new(source_array),
+                Arc::new(text_array),
+                Arc::new(vector_array),
+                Arc::new(project_id_array),
+                Arc::new(indexed_at_array),
+            ],
+        )?;
+
+        let table = self.lancedb_conn.open_table(&table_name).execute().await?;
+        table.add(RecordBatchIterator::new(vec![Ok(batch)], schema)).execute().await?;
 
         Ok(())
     }

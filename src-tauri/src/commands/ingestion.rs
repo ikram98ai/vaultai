@@ -1,24 +1,25 @@
 use tauri::{State, AppHandle, Manager, path::BaseDirectory};
 use crate::AppState;
-use serde_json::Value;
 
 #[tauri::command]
 pub async fn ingest_document(
+    app_handle: AppHandle,
     state: State<'_, AppState>,
     doc_id: String,
     text: String,
     source: String,
-    project_slug: Option<String>,
-    metadata: Option<Value>,
+    project_id: Option<String>,
 ) -> Result<(), String> {
-    state
-        .rag
+    let rag = state.rag.get_or_try_init(|| async {
+        crate::rag::RagSystem::new(&app_handle).await
+    }).await.map_err(|e| e.to_string())?;
+
+    rag
         .index_document(
             &doc_id,
             &text,
             &source,
-            project_slug.as_deref(),
-            metadata,
+            project_id.as_deref(),
         )
         .await
         .map_err(|e| e.to_string())
@@ -31,7 +32,6 @@ pub async fn ingest_file(
     file_id: String,
     file_name: String,
     project_id: Option<String>,
-    metadata: Option<Value>,
 ) -> Result<(), String> {
     // Resolve the file path in AppData
     let dir = if let Some(ref pid) = project_id {
@@ -49,15 +49,17 @@ pub async fn ingest_file(
     let text = crate::rag::RagSystem::extract_text(&file_path)
         .map_err(|e| e.to_string())?;
 
+    let rag = state.rag.get_or_try_init(|| async {
+        crate::rag::RagSystem::new(&app_handle).await
+    }).await.map_err(|e| e.to_string())?;
+
     // Index
-    state
-        .rag
+    rag
         .index_document(
             &file_id,
             &text,
             &file_name,
             project_id.as_deref(),
-            metadata,
         )
         .await
         .map_err(|e| e.to_string())

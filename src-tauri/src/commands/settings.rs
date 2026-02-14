@@ -27,7 +27,7 @@ pub fn get_available_models(models_path: &PathBuf) -> Vec<ModelInfo> {
     let mut models = Vec::new();
     
 
-    // read dir recursively to look for model in models and models/image dir for .llamafiles
+    // read dir recursively to look for model in models dir for .llamafiles
     if let Ok(entries) = fs::read_dir(&models_path) {
         for entry in entries.flatten() {
 
@@ -71,23 +71,26 @@ pub fn get_system_tier(app: tauri::AppHandle) -> types::SystemTier {
         "max".to_string()
     };
 
-    // Try to get models from the app resource directory
+    // Try to get models from the resource directory
     let models_path = app.path()
         .resolve("../models", tauri::path::BaseDirectory::Resource)
         .unwrap_or_else(|_| {
-            let mut path = std::env::current_dir().unwrap_or_default();
-            path.push("../models");
-            path
+            app.path().app_data_dir().map(|p| p.join("../models")).unwrap_or_else(|_| PathBuf::from("../models"))
         });
  
     
     // Get available models from directory
     let available_models = get_available_models(&models_path);
     
-    // Use first available model as default, fallback to hardcoded default
+    // Use first available model as default, fallback to a sensible default
     let default_model = available_models.first()
         .map(|m| m.model_path.clone())
-        .unwrap_or_else(|| "../models/llama3.2-1b.llamafile".to_string());
+        .unwrap_or_else(|| {
+            app.path()
+                .resolve("../models/llama3.2-1b.llamafile", tauri::path::BaseDirectory::Resource)
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_else(|_| "../models/llama3.2-1b.llamafile".to_string())
+        });
 
     types::SystemTier {
         tier,

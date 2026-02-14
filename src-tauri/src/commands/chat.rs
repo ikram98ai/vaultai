@@ -4,7 +4,7 @@ use anyhow::Result;
 use reqwest::Client;
 use serde_json::json;
 use tauri::State;
-
+use std::collections::HashSet;
 fn build_prompt(
     query: &str,
     context: &str,
@@ -96,6 +96,7 @@ async fn generate(
 
 #[tauri::command]
 pub async fn send_query(
+    app_handle: tauri::AppHandle,
     state: State<'_, AppState>,
     query: String,
     system_prompt: String,
@@ -106,14 +107,22 @@ pub async fn send_query(
     let generation_time = std::time::Instant::now();
 
     let mut context = String::new();
-    
+    let mut sources: HashSet<String> = HashSet::new();
+
     // Perform RAG if enabled
     if options.rag_enabled || options.project_ids.is_some() {
-        let project_slugs = options.project_ids.clone().unwrap_or_default();
-        match state.rag.query_index(&query, 5, project_slugs).await {
+        let project_ids = options.project_ids.clone().unwrap_or_default();
+        
+        let rag = state.rag.get_or_try_init(|| async {
+            crate::rag::RagSystem::new(&app_handle).await
+        }).await.map_err(|e| e.to_string())?;
+
+        match rag.query_index(&query, 3, project_ids).await {
             Ok(results) => {
                 for (i, result) in results.iter().enumerate() {
+                    println!("Found document {} with content: {}", i + 1, result.content);
                     context.push_str(&format!("\n--- Document {} ---\n{}\n", i + 1, result.content));
+                    sources.insert(result.source.clone());
                 }
                 if results.is_empty() {
                     context.push_str("No relevant documents found in the knowledgebase.\n");
@@ -144,6 +153,7 @@ pub async fn send_query(
         Ok(content) => Ok(types::QueryResponse {
             success: true,
             content: Some(content),
+            sources: sources,
             generation_time: Some(generation_duration.as_secs_f64()),
             error: None,
         }),
@@ -152,6 +162,7 @@ pub async fn send_query(
             Ok(types::QueryResponse {
                 success: false,
                 content: None,
+                sources: sources,
                 generation_time: Some(generation_duration.as_secs_f64()),
                 error: Some(e.to_string()),
             })

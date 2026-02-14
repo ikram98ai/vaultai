@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { ModelInfo, UserProfile } from "../types";
-import { getSystemTier, getMemoryUsage, startLlamafile, getRunningModel } from "../services/tauri/commands";
+import { getSystemTier, getMemoryUsage, startLlamafile } from "../services/tauri/commands";
 
 interface AppState {
   // Model state
@@ -112,31 +112,13 @@ export const useAppStore = create<AppState>()(
 
       detectSystemTier: async () => {
         try {
-          const { tier, defaultModel, availableModels } = await getSystemTier();
-          const { currentModelPath: currentModel } = get();
-          
-          const finalModelPath = currentModel || defaultModel;
+          const { tier, defaultModel, availableModels } = await getSystemTier();          
 
           set({
             systemTier: tier as any,
-            currentModelPath: finalModelPath,
+            currentModelPath: defaultModel,
             availableModels: availableModels,
           });
-
-          // Handle llamafile lifecycle on startup
-          if (finalModelPath.endsWith(".llamafile")) {
-            const runningModel = await getRunningModel();
-            if (runningModel !== finalModelPath) {
-              set({ isModelLoading: true });
-              try {
-                await startLlamafile(finalModelPath);
-              } catch (e) {
-                console.error("Failed to start llamafile on startup:", e);
-              } finally {
-                set({ isModelLoading: false });
-              }
-            }
-          }
 
           // Also fetch memory usage
           const memory = await getMemoryUsage();

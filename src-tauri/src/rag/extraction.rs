@@ -27,6 +27,12 @@ pub fn extract_text(path: &Path) -> Result<String> {
             odt.read_to_string(&mut text).map_err(|e| anyhow!("Failed to read ODT: {}", e))?;
             text
         },
+        "pptx" => {
+            let mut pptx = Pptx::open(path).map_err(|e| anyhow!("Failed to open PPTX: {}", e))?;
+            let mut text = String::new();
+            pptx.read_to_string(&mut text).map_err(|e| anyhow!("Failed to read PPTX: {}", e))?;
+            text
+        },
         "csv" => {
             extract_csv(path)?
         },

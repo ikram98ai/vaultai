@@ -61,24 +61,24 @@ export const ingestDocument = (
   docId: string,
   text: string,
   source: string,
-  projectSlug?: string,
-  metadata?: Record<string, unknown>
+  projectId?: string,
 ): Promise<void> => 
-  invoke("ingest_document", { docId, text, source, projectSlug, metadata });
+  invoke("ingest_document", { docId, text, source, projectId });
 
 export const ingestFile = (
   fileId: string,
   fileName: string,
   projectId?: string,
-  metadata?: Record<string, unknown>
 ): Promise<void> => 
-  invoke("ingest_file", { fileId, fileName, projectId, metadata });
+  invoke("ingest_file", { fileId, fileName, projectId });
 
 // ============ File Commands ============
 
 export const uploadFiles = async (files: FileData[], projectId?: string): Promise<UploadResult> => {
   try {
     const uploadedFiles: FileInfo[] = [];
+    let hasError = false;
+    let errorMessage = "";
     
     for (const file of files) {
       if (await sqlService.isDuplicateFile(file.name, file.size, file.type, projectId)) {
@@ -104,14 +104,13 @@ export const uploadFiles = async (files: FileData[], projectId?: string): Promis
 
         // Ingest the file using the new robust backend command
         try {
-            await ingestFile(id, file.name, projectId, {
-                fileName: file.name,
-                fileType: file.type,
-                fileSize: file.size
-            });
+            await ingestFile(id, file.name, projectId);
             console.log(`Ingested file: ${file.name}`);
         } catch (err) {
             console.error(`Failed to ingest file ${file.name}:`, err);
+            hasError = true;
+            errorMessage = String(err);
+            fileInfo.status = "error";
         }
       }
 
@@ -119,6 +118,10 @@ export const uploadFiles = async (files: FileData[], projectId?: string): Promis
       uploadedFiles.push(fileInfo);
     }
     
+    if (hasError && uploadedFiles.length === 1) {
+        return { success: false, error: errorMessage, files: uploadedFiles };
+    }
+
     return { success: true, files: uploadedFiles };
   } catch (error) {
     console.error("Failed to upload files:", error);

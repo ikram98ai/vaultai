@@ -10,7 +10,7 @@ export interface Message {
   model?: string;
   generationTime?: number;
   memoryData?: MemoryData;
-  sources?: Source[];
+  sources?: string[];
   isImageGeneration?: boolean;
   promptRef?: PromptReference;
 }
@@ -31,12 +31,6 @@ export interface MemoryData {
   percentage: number;
 }
 
-export interface Source {
-  type: "file" | "web" | "project";
-  title: string;
-  url?: string;
-  content?: string;
-}
 
 export interface PromptReference {
   id: string;
@@ -146,7 +140,7 @@ export interface QueryResponse {
   success: boolean;
   content?: string;
   generationTime?: number;
-  sources?: Source[];
+  sources?: string[];
   error?: string;
 }
 

@@ -2,6 +2,7 @@ import { Sidebar } from './Sidebar';
 import { MainContent } from './MainContent';
 import { ProfileModal } from '../modals/ProfileModal';
 import { SearchModal } from '../modals/SearchModal';
+import { NotificationToast } from '../common/NotificationToast';
 import { useUIStore } from '../../stores/uiStore';
 import { Menu } from 'lucide-react';
 
@@ -44,6 +45,9 @@ export function Layout() {
 
       {/* Search Modal */}
       <SearchModal />
+
+      {/* Notifications */}
+      <NotificationToast />
     </div>
   );
 }

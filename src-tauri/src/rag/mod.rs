@@ -2,48 +2,52 @@ pub(crate) mod ingestion;
 pub(crate) mod retrieval;
 pub(crate) mod extraction;
 
-use qdrant_client::Qdrant;
-use fastembed::{TextEmbedding, SparseTextEmbedding, EmbeddingModel, SparseModel, SparseEmbedding, TextInitOptions, SparseInitOptions};
-use std::sync::Arc;
+use lancedb::Connection;
+use fastembed::{TextEmbedding, EmbeddingModel, TextInitOptions};
 use anyhow::Result;
-use std::path::PathBuf;
 use tokio::sync::Mutex;
+use tauri::{AppHandle, Manager};
 
-pub const SPARSE_VECTOR_NAME: &str = "text";
 pub const DENSE_VECTOR_NAME: &str = "dense";
 pub const COLLECTION_NAME: &str = "vaultai_docs";
 
 pub struct RagSystem {
-    pub qdrant_client: Arc<Qdrant>,
+    pub lancedb_conn: Connection,
     pub dense_model: Mutex<TextEmbedding>,
-    pub sparse_model: Mutex<SparseTextEmbedding>,
 }
 
 impl RagSystem {
-    pub async fn new(tier: &str) -> Result<Self> {
-        let qdrant_url = "http://localhost:6333";
-        let qdrant_client = Arc::new(Qdrant::from_url(qdrant_url).build()?);
+    pub async fn new(app_handle: &AppHandle) -> Result<Self> {
+        let app_dir = app_handle.path().app_data_dir()?;
+        
+        let db_path = app_dir.join("vectordb").join("lancedb");
+        println!("Initializing LanceDB at: {:?}", db_path);
+        std::fs::create_dir_all(&db_path)?;
+        
+        let db_path_str = db_path.to_string_lossy();
+        let lancedb_conn = lancedb::connect(&db_path_str).execute().await?;
 
+        let cache_dir = app_dir.join("vectordb").join("model");
+        println!("Embedding model cache directory: {:?}", cache_dir);
+        std::fs::create_dir_all(&cache_dir)?;
+
+        println!("Initializing dense embedding model (FastEmbed)...");
         let dense_model = TextEmbedding::try_new(
             TextInitOptions::new(EmbeddingModel::AllMiniLML6V2)
-                .with_cache_dir(PathBuf::from("models/embed"))
+                .with_cache_dir(cache_dir.clone())
+                .with_show_download_progress(true)
         )?;
 
-        let sparse_model = SparseTextEmbedding::try_new(
-            SparseInitOptions::new(SparseModel::SPLADEPPV1) 
-                .with_cache_dir(PathBuf::from("models/embed"))
-        )?;
-
+        println!("RAG System initialized successfully.");
         Ok(Self {
-            qdrant_client,
+            lancedb_conn,
             dense_model: Mutex::new(dense_model),
-            sparse_model: Mutex::new(sparse_model),
         })
     }
 
-    pub fn get_collection_name(project_slug: Option<&str>, source: Option<&str>) -> String {
-        if let Some(slug) = project_slug {
-            format!("vaultai_project_{}", slug)
+    pub fn get_collection_name(project_id: Option<&str>, source: Option<&str>) -> String {
+        if let Some(id) = project_id {
+            format!("vaultai_project_{}", id)
         } else if source == Some("global_knowledgebase") {
             "vaultai_global_kb".to_string()
         } else {
@@ -51,18 +55,11 @@ impl RagSystem {
         }
     }
 
-    pub async fn generate_vectors(&self, text: &str) -> Result<(Vec<f32>, SparseEmbedding)> {
+    pub async fn generate_vectors(&self, text: &str) -> Result<Vec<f32>> {
         let mut dense_model = self.dense_model.lock().await;
         let dense_embeddings = dense_model.embed(vec![text], None)?;
         let dense_vector = dense_embeddings[0].clone();
 
-        let mut sparse_model = self.sparse_model.lock().await;
-        let sparse_embeddings = sparse_model.embed(vec![text], None)?;
-        let sparse_vector = SparseEmbedding {
-            indices: sparse_embeddings[0].indices.clone(),
-            values: sparse_embeddings[0].values.clone(),
-        };
-
-        Ok((dense_vector, sparse_vector))
+        Ok(dense_vector)
     }
 }

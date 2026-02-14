@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 
 
@@ -20,6 +22,7 @@ pub struct ChatMessage {
 pub struct QueryResponse {
     pub success: bool,
     pub content: Option<String>,
+    pub sources: HashSet<String>,
     pub generation_time: Option<f64>,
     pub error: Option<String>,
 }

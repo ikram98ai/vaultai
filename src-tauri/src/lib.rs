@@ -2,8 +2,10 @@ pub(crate) mod commands;
 pub(crate) mod types;
 pub(crate) mod rag;
 use tauri_plugin_shell::process::CommandChild;
-use std::sync::{Arc, Mutex};
+use std::sync::{Mutex};
 use rag::RagSystem;
+use tauri::Manager;
+use tokio::sync::OnceCell;
 
 pub struct LlamafileState {
     pub child: Mutex<Option<CommandChild>>,
@@ -11,8 +13,7 @@ pub struct LlamafileState {
 }
 
 pub struct AppState {
-    pub llamafile: LlamafileState,
-    pub rag: Arc<RagSystem>,
+    pub rag: OnceCell<RagSystem>,
 }
 
 // ============ App Entry Point ============
@@ -20,27 +21,27 @@ pub struct AppState {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // We'll use a block_on or just initialize it synchronously if possible, 
-    // but since RagSystem::new is async, we use tokio
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let rag_system = rt.block_on(async {
-        RagSystem::new("lite").await.expect("Failed to initialize RAG system")
-    });
-    let rag = Arc::new(rag_system);
-
     tauri::Builder::default()
-        .manage(AppState {
-            llamafile: LlamafileState {
+        .setup(|app| {
+            app.manage(AppState {
+                rag: OnceCell::new(),
+            });
+
+            app.manage(LlamafileState {
                 child: Mutex::new(None),
                 current_model: Mutex::new(None),
-            },
-            rag,
+            });
+
+            Ok(())
         })
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_sql::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            // App
+            commands::app::initialize_application,
+
             // Chat
             commands::chat::send_query,
 

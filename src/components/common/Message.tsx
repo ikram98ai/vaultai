@@ -160,6 +160,7 @@ export function Message({ message }: MessageProps) {
       <div className="flex items-center gap-3 mt-1 ml-1 text-[11px] text-text-muted opacity-70 mb-3">
         <span>{formatTime(message.timestamp)}</span>
         {message.model && <span>{message.model}</span>}
+        {message.sources && <span className="text-xs">{message.sources}</span>}
         {message.generationTime && <span>{message.generationTime.toFixed(1)}s</span>}
         
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">

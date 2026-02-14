@@ -66,14 +66,30 @@ export function FilesContainer() {
   };
 
   const handleFileUpload = async (filesToUpload: File[]) => {
+    const SUPPORTED_EXTENSIONS = ['pdf', 'docx', 'odt', 'pptx', 'csv', 'xlsx', 'html', 'htm', 'txt', 'md', 'json'];
+    
     // Check file count limit
     if (filesToUpload.length > 25) {
       showNotification('Too many files selected. Maximum 25 files at once.', 'error');
       return;
     }
 
+    const validFiles = filesToUpload.filter(file => {
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        return ext && SUPPORTED_EXTENSIONS.includes(ext);
+    });
+
+    if (validFiles.length === 0) {
+        showNotification('No supported files selected. Supported formats: PDF, Word, Excel, CSV, Text, MD, JSON, HTML.', 'error');
+        return;
+    }
+
+    if (validFiles.length < filesToUpload.length) {
+        showNotification(`${filesToUpload.length - validFiles.length} files were ignored (unsupported format).`, 'warning');
+    }
+
     // Initialize progress tracking
-    const newUploadingFiles = filesToUpload.map(file => ({
+    const newUploadingFiles = validFiles.map(file => ({
       id: crypto.randomUUID(),
       name: file.name,
       size: file.size,
@@ -87,8 +103,8 @@ export function FilesContainer() {
       // Process files for Tauri command
       const fileDataList: FileData[] = [];
       
-      for (let i = 0; i < filesToUpload.length; i++) {
-        const file = filesToUpload[i];
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i];
         const base64Data = await fileToBase64(file);
         
         fileDataList.push({

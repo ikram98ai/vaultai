@@ -65,6 +65,7 @@ class TauriSqlService {
         chat_id TEXT NOT NULL,
         role TEXT NOT NULL,
         content TEXT NOT NULL,
+        sources Text,
         timestamp INTEGER,
         model TEXT,
         generation_time REAL,
@@ -412,14 +413,15 @@ class TauriSqlService {
     try {
       // 1. Insert message
       await this.db.execute(
-        `INSERT INTO messages (chat_id, role, content, timestamp, model, generation_time)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+        `INSERT INTO messages (chat_id, role, content, timestamp, model, sources, generation_time)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
           chatId,
           message.role,
           message.content,
           message.timestamp || Date.now(),
           message.model || null,
+          message.sources?.toString() || null,
           message.generationTime || null,
         ],
       );

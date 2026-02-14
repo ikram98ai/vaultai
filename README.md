@@ -2,6 +2,14 @@
 
 VaultAI is a secure, personal AI workstation built with **Tauri v2**, **Rust**, and **React**. It is the ultimate self-contained AI device: enjoy uncensored, unlimited use with no token limits, zero AI watermarks, and 100% personalized responses, tell it anything, any way you want, and create whatever you need, privately. Everything runs locally, powered by state-of-the-art AI models, so your ideas and data never leave your pocket-sized, portable device, no clouds, no exposure, and no restrictions. With VaultAI, work and create freely and securely, off-grid, wherever you are, with full confidence that only you control what’s inside.
 
+## 📸 Screenshots
+
+<div align="center">
+  <img src="public/vaultai-sc1.png" width="45%" alt="VaultAI Screenshot 1" />
+  <img src="public/vaultai-sc2.png" width="45%" alt="VaultAI Screenshot 2" />
+  <img src="public/vaultai-sc3.png" width="45%" alt="VaultAI Screenshot 3" />
+  <img src="public/vaultai-sc4.png" width="45%" alt="VaultAI Screenshot 4" />
+</div>
 
 ## 🚀 Tech Stack
 
@@ -16,6 +24,8 @@ VaultAI is a secure, personal AI workstation built with **Tauri v2**, **Rust**, 
 ### Backend
 
 - **Core:** Rust (Tauri v2)
+- **AI Inference:** llamafile (Local LLM execution)
+- **Vector Search:** LanceDB (Embedded serverless vector database)
 - **Database:** SQLite (via Tauri SQL Plugin)
 - **File System:** Local-first encrypted storage (via Tauri FS Plugin)
 - **Communication:** Secure IPC Bridge (Type-safe Commands)
@@ -56,14 +66,8 @@ Clone the repository and install dependencies:
 ```
 
 ### 3. Download AI Models
-**MacOS/Linux**: `curl -LsSf https://hf.co/cli/install.sh | bash`
 
-**Window**: `powershell -ExecutionPolicy ByPass -c "irm https://hf.co/cli/install.ps1 | iex"`
-
-- `hf auth login`
-
-- `hf download meta-llama/Llama-3.2-3B  --exclude "original/" --local-dir ./models/llama-3.2-3B`
-
+Download models as llamafile from [Mozilla Hugging Face](https://huggingface.co/mozilla-ai) and store them in the `models/` directory:
 
 ### 4. Run in Development Mode
 
@@ -107,38 +111,34 @@ _Note: You must build on the respective platform to generate these._
 
 ## 📂 Project Structure
 
-- `src/` - React Frontend
-  - `assets/` - Static assets (images, icons, fonts)
-  - `components/` - View layer & reusable UI
-  - `data/` - Static data files (prompts)
-  - `services/` - Tauri command definitions & IPC bridges
-  - `stores/` - Zustand state management (The Orchestrator)
-  - `types/` - TypeScript interfaces and types
-  - `App.css` - Global styles
-  - `App.tsx` - Root React component
-  - `main.tsx` - React entry point
-
-- `src-tauri/` - Rust Backend
-  - `src/` - Tauri commands, SQL migrations, and File System logic
-  - `capabilities/` - Security permissions for Tauri v2
-  - `build.rs` - Build script for Tauri
-  - `Cargo.toml` - Rust dependencies and project metadata
-  - `tauri.conf.json` - Tauri configuration file
-
-- `.gitignore` - Git ignore rules
-- `index.html` - HTML template for Vite
-- `package.json` - Node.js dependencies and scripts
-- `pnpm-lock.yaml` - PNPM lockfile for dependency versions
-- `README.md` - Project documentation
-- `splashscreen.html` - Splash screen
-- `tsconfig.json` - TypeScript configuration
-- `tsconfig.node.json` - TypeScript config for Node environment
-- `vite.config.ts` - Vite configuration
-
----
-
-## 🔮 Future Roadmap
-
-- **Local LLM Inference**: Integration with `llama.cpp` / `mistral.rs`.
-- **RAG (Retrieval Augmented Generation)**: Local vector database for document querying with `qdrant`.
-- **Image Generation**: Local image generation (FLUX) support.
+```text
+vaultai/
+├── src/                    # React Frontend (TypeScript)
+│   ├── assets/             # Static assets (images, icons, fonts)
+│   ├── components/         # UI Components
+│   │   ├── common/         # Reusable UI elements (Dropdown, Inputs, etc.)
+│   │   ├── layout/         # Core layout (Sidebar, MainContent)
+│   │   ├── modals/         # Modal dialogs
+│   │   └── ...             # Feature-specific containers (Chat, Files, etc.)
+│   ├── data/               # Static configurations & premade prompts
+│   ├── services/           # Backend communication bridge
+│   │   └── tauri/          # Tauri IPC & system service wrappers
+│   ├── stores/             # Zustand state management (App logic)
+│   ├── types/              # Global TypeScript definitions
+│   ├── App.tsx             # Main application entry component
+│   └── main.tsx            # React DOM mounting point
+├── src-tauri/              # Rust Backend (Tauri v2)
+│   ├── src/                # Rust Source
+│   │   ├── commands/       # Tauri command handlers (Rust side)
+│   │   ├── rag/            # RAG (Retrieval-Augmented Generation) engine
+│   │   ├── lib.rs          # Tauri application setup
+│   │   └── main.rs         # Application entry point
+│   ├── capabilities/       # Security & Permission manifests
+│   ├── Cargo.toml          # Rust dependencies & metadata
+│   └── tauri.conf.json     # Tauri framework configuration
+├── public/                 # Static public assets & screenshots
+├── models/                 # Local directory for AI models (llamafile)
+├── index.html              # Frontend entry HTML
+├── package.json            # Node.js dependencies & scripts
+└── tsconfig.json           # TypeScript configuration
+```
