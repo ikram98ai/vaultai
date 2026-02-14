@@ -1,7 +1,9 @@
 use crate::types;
+use crate::AppState;
 use anyhow::Result;
 use reqwest::Client;
 use serde_json::json;
+use tauri::State;
 
 fn build_prompt(
     query: &str,
@@ -94,6 +96,7 @@ async fn generate(
 
 #[tauri::command]
 pub async fn send_query(
+    state: State<'_, AppState>,
     query: String,
     system_prompt: String,
     history: Vec<types::ChatMessage>,
@@ -103,17 +106,35 @@ pub async fn send_query(
     let generation_time = std::time::Instant::now();
 
     let mut context = String::new();
-    if options.rag_enabled {
-        context.push_str("RAG is enabled.\n\n ");
-    }
-    if options.web_search_enabled {
-        context.push_str("Web search is enabled.\n\n ");
-    }
-    if options.project_ids.is_some() {
-        context.push_str("Project-specific context is included. ");
+    
+    // Perform RAG if enabled
+    if options.rag_enabled || options.project_ids.is_some() {
+        let project_slugs = options.project_ids.clone().unwrap_or_default();
+        match state.rag.query_index(&query, 5, project_slugs).await {
+            Ok(results) => {
+                for (i, result) in results.iter().enumerate() {
+                    context.push_str(&format!("\n--- Document {} ---\n{}\n", i + 1, result.content));
+                }
+                if results.is_empty() {
+                    context.push_str("No relevant documents found in the knowledgebase.\n");
+                }
+            },
+            Err(e) => {
+                println!("RAG error: {:?}", e);
+                context.push_str(&format!("Error retrieving context: {}\n", e));
+            }
+        }
     }
 
-    let prompt = build_prompt(&query, &context, &options);
+    if options.web_search_enabled {
+        context.push_str("\n[Web search results would be here]\n ");
+    }
+
+    let prompt = if context.is_empty() {
+        query.clone()
+    } else {
+        build_prompt(&query, &context, &options)
+    };
 
     let content_result = generate(prompt, system_prompt, &history).await;
 

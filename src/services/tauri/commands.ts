@@ -56,6 +56,24 @@ export const sendQuery = (
   options: QueryOptions,
 ): Promise<QueryResponse> => 
   invoke<QueryResponse>("send_query", { query, systemPrompt, history, options });
+
+export const ingestDocument = (
+  docId: string,
+  text: string,
+  source: string,
+  projectSlug?: string,
+  metadata?: Record<string, unknown>
+): Promise<void> => 
+  invoke("ingest_document", { docId, text, source, projectSlug, metadata });
+
+export const ingestFile = (
+  fileId: string,
+  fileName: string,
+  projectId?: string,
+  metadata?: Record<string, unknown>
+): Promise<void> => 
+  invoke("ingest_file", { fileId, fileName, projectId, metadata });
+
 // ============ File Commands ============
 
 export const uploadFiles = async (files: FileData[], projectId?: string): Promise<UploadResult> => {
@@ -83,6 +101,18 @@ export const uploadFiles = async (files: FileData[], projectId?: string): Promis
       // Save physical file
       if (file.data) {
         await savePhysicalFile(id, file.data, projectId);
+
+        // Ingest the file using the new robust backend command
+        try {
+            await ingestFile(id, file.name, projectId, {
+                fileName: file.name,
+                fileType: file.type,
+                fileSize: file.size
+            });
+            console.log(`Ingested file: ${file.name}`);
+        } catch (err) {
+            console.error(`Failed to ingest file ${file.name}:`, err);
+        }
       }
 
       await sqlService.addFileRecord(fileInfo);
